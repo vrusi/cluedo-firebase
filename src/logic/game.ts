@@ -66,6 +66,7 @@ class Suspect {
         this.startingPosition = startingPosition;
         this.colour = colour;
     }
+
 }
 
 class Player {
@@ -115,43 +116,49 @@ class Room {
     }
 }
 
-
-class Card {
-    public type: CardType;
-    public value: Suspect | Room | Weapon;
-    public isSolution: boolean;
-
-    constructor(
-        type: CardType,
-        value: CardValue,
-        isSolution: boolean,
-    ) {
-        this.type = type;
-        this.value = value;
-        this.isSolution = isSolution;
-    }
-}
-
-
 export default class Game {
     public board: Board;
     public players: Player[];
-    public cards: Card[];
+    public suspects: Suspect[];
+    public weapons: Weapon[];
+    public rooms: Room[];
+    public solution: [Suspect, Weapon, Room] | null = null;
     public status: GameStatus;
 
     constructor(
         board: Board,
         players: Player[],
-        cards: Card[],
+        suspects: Suspect[],
+        weapons: Weapon[],
+        rooms: Room[],
         status: GameStatus = 'Created',
     ) {
         this.board = board;
         this.players = players;
-        this.cards = cards;
+        this.suspects = suspects;
+        this.weapons = weapons;
+        this.rooms = rooms;
         this.status = status;
     }
 
     public init() {
         this.board.distributeWeapons();
+        this.solution = this.generateSolution();
+    }
+
+    get randomSuspect(): Suspect {
+        return this.suspects[Utils.getRandomInt(0, this.suspects.length)] as Suspect;
+    }
+
+    get randomWeapon(): Weapon {
+        return this.weapons[Utils.getRandomInt(0, this.weapons.length)] as Weapon;
+    }
+
+    get randomRoom(): Room {
+        return this.rooms[Utils.getRandomInt(0, this.rooms.length)] as Room;
+    }
+
+    generateSolution(): [Suspect, Weapon, Room] {
+        return [this.randomSuspect, this.randomWeapon, this.randomRoom];
     }
 }
