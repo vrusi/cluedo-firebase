@@ -1,18 +1,52 @@
 
 type FieldType = 'Hall' | 'Door' | 'Room' | 'Inaccessible';
-type WeaponsMapType = Map<Room, Weapon | null>; 
+type WeaponsMapType = Map<Room, Weapon | null>;
+type BoardWeapon = { weapon: Weapon, isSet: boolean };
+type BoardRoom = { room: Room, isTaken: boolean };
 
 class Board {
     public fields: FieldType[][];
-    public weapons: WeaponsMapType;
+    public rooms: BoardRoom[];
+    public weapons: BoardWeapon[]
+    public weaponsMap: WeaponsMapType;
 
     constructor(
         fields: FieldType[][],
-        weapons: WeaponsMapType,
+        rooms: BoardRoom[],
+        weapons: BoardWeapon[],
+        weaponsMap: WeaponsMapType,
     ) {
         this.fields = fields;
+        this.rooms = rooms;
         this.weapons = weapons;
+        this.weaponsMap = weaponsMap;
     }
+
+    getRandomInt(min: number, max: number) {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    initWeapons() {
+        this.weapons.forEach(
+            weapon => {
+                let room = this.rooms[0];
+                do {
+                    room = this.rooms[this.getRandomInt(0, this.rooms.length)];
+
+                    if (!room.isTaken) {
+                        room.isTaken = true;
+                        this.weaponsMap.set(room.room, weapon.weapon);
+                        break;
+                    }
+
+                } while (room.isTaken);
+            }
+        );
+    }
+
+
 }
 
 type CharacterName = 'Plum' | 'White' | 'Scarlet' | 'Green' | 'Mustard' | 'Peacock';
@@ -33,7 +67,7 @@ class Suspect {
     }
 }
 
-type Position = { x: number, y: number };
+type Position = { row: number, column: number };
 
 class Player {
     public character: Suspect;
@@ -52,11 +86,8 @@ class Player {
 }
 
 type Room = 'Courtyard' | 'Game Room' | 'Study' | 'Dining Room' | 'Garage' | 'LivingRoom' | 'Kitchen' | 'Bedroom' | 'Bathroom';
-type Weapon = {
-    name: 'Rope' | 'Dagger' | 'Wrench' | 'Pistol' | 'Candlestick' | 'Lead Pipe',
-    room: Room,
-}
-type CardType = 'Suspect' | 'Room' | 'Weapon' ;
+type Weapon = 'Rope' | 'Dagger' | 'Wrench' | 'Pistol' | 'Candlestick' | 'Lead Pipe';
+type CardType = 'Suspect' | 'Room' | 'Weapon';
 type CardValue = Suspect | Room | Weapon;
 
 class Card {
@@ -89,4 +120,6 @@ export default class Game {
         this.players = players;
         this.cards = cards;
     }
+
+
 }
