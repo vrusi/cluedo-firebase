@@ -11,47 +11,41 @@ type CharacterName = 'Plum' | 'White' | 'Scarlet' | 'Green' | 'Mustard' | 'Peaco
 type Position = { row: number, column: number };
 type GameStatus = 'Created' | 'Playing' | 'Over';
 
-
-class Board {
-    public fields: FieldType[][];
-    public rooms: BoardRoom[];
-    public weapons: BoardWeapon[]
-    public weaponsMap: WeaponsMapType;
-
-    constructor(
-        fields: FieldType[][],
-        rooms: BoardRoom[],
-        weapons: BoardWeapon[],
-        weaponsMap: WeaponsMapType,
-    ) {
-        this.fields = fields;
-        this.rooms = rooms;
-        this.weapons = weapons;
-        this.weaponsMap = weaponsMap;
-    }
-
-    getRandomInt(min: number, max: number) {
+class Utils {
+    static getRandomInt(min: number, max: number) {
         min = Math.ceil(min);
         max = Math.floor(max);
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
+}
 
-    initWeapons() {
+class Board {
+    public fields: FieldType[][];
+    public rooms: Room[];
+    public weapons: Weapon[]
+
+    constructor(
+        fields: FieldType[][],
+        rooms: Room[],
+        weapons: Weapon[],
+    ) {
+        this.fields = fields;
+        this.rooms = rooms;
+        this.weapons = weapons;
+    }
+
+    distributeWeapons() {
         this.weapons.forEach(
             weapon => {
-
                 let room;
 
                 do {
-                    room = this.rooms[this.getRandomInt(0, this.rooms.length)];
+                    room = this.rooms[Utils.getRandomInt(0, this.rooms.length)];
 
-                    if (!room.isTaken) {
-                        room.isTaken = true;
-                        this.weaponsMap.set(room.room, weapon.weapon);
-                        break;
+                    if (room.hasNoWeapons) {
+                        room.weapons.push(weapon);
                     }
-
-                } while (room.isTaken);
+                } while (!room.hasNoWeapons);
             }
         );
     }
@@ -115,6 +109,10 @@ class Room {
         this.suspects = suspects;
         this.entrances = entrances;
     }
+
+    get hasNoWeapons() {
+        return this.weapons.length === 0;
+    }
 }
 
 
@@ -154,6 +152,6 @@ export default class Game {
     }
 
     public init() {
-        this.board.initWeapons();
+        this.board.distributeWeapons();
     }
 }
