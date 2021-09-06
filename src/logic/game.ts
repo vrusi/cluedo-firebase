@@ -107,6 +107,7 @@ class Player {
         state: 'unseen' | 'seen' | 'marked'
     }
     >;
+    public currentField: FieldType;
 
     constructor(
         character: Suspect,
@@ -123,6 +124,7 @@ class Player {
         this.position = position ?? this.character.startingPosition;
         this.notepad = new Map;
         this.cards = cards ?? [];
+        this.currentField = 'C';
     }
 
 }
@@ -241,8 +243,16 @@ export default class Game {
                 if (newField !== 'C' && newField !== 'E') {
                     return new Error(ErrorMessage.WALL);
                 }
+                
+                // rewrite the board field the player is standing on to its original value
+                this.board.fields[player.position.row][player.position.col] = player.currentField;
+                
+                // rewrite the field the player will be standing on to the new value
+                this.board.fields[newPosition.row][newPosition.col] = '1';
 
+                // rewrite player position
                 player.position = newPosition;
+
                 return true;  
             
             case Direction.DOWN:
@@ -258,8 +268,16 @@ export default class Game {
                 if (newField !== 'C' && newField !== 'E') {
                     return new Error(ErrorMessage.WALL);
                 }
+                
+                // rewrite the board field the player is standing on to its original value
+                this.board.fields[player.position.row][player.position.col] = player.currentField;
+                
+                // rewrite the field the player will be standing on to the new value
+                this.board.fields[newPosition.row][newPosition.col] = '1';
 
+                // rewrite player position
                 player.position = newPosition;
+
                 return true;
                 
             case Direction.RIGHT:
@@ -276,7 +294,15 @@ export default class Game {
                     return new Error(ErrorMessage.WALL);
                 }
 
+                // rewrite the board field the player is standing on to its original value
+                this.board.fields[player.position.row][player.position.col] = player.currentField;
+                
+                // rewrite the field the player will be standing on to the new value
+                this.board.fields[newPosition.row][newPosition.col] = '1';
+
+                // rewrite player position
                 player.position = newPosition;
+
                 return true;
 
             case Direction.LEFT:
@@ -292,8 +318,16 @@ export default class Game {
                 if (newField !== 'C' && newField !== 'E') {
                     return new Error(ErrorMessage.WALL);
                 }
+                
+                // rewrite the board field the player is standing on to its original value
+                this.board.fields[player.position.row][player.position.col] = player.currentField;
+                
+                // rewrite the field the player will be standing on to the new value
+                this.board.fields[newPosition.row][newPosition.col] = '1';
 
+                // rewrite player position
                 player.position = newPosition;
+
                 return true;
 
             default:
