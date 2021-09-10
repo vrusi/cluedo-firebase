@@ -1,6 +1,6 @@
-type FieldType = '0' | '1' | 'R' | 'C' | 'N' | 'E' | 'S' | 'W';
+export type FieldType = '0' | '1' | 'R' | 'C' | 'N' | 'E' | 'S' | 'W';
 type RoomName = 'Courtyard' | 'Game Room' | 'Study' | 'Dining Room' | 'Garage' | 'Living Room' | 'Kitchen' | 'Bedroom' | 'Bathroom';
-type Weapon = 'Rope' | 'Dagger' | 'Wrench' | 'Pistol' | 'Candlestick' | 'Lead Pipe';
+export type Weapon = 'Rope' | 'Dagger' | 'Wrench' | 'Pistol' | 'Candlestick' | 'Lead Pipe';
 type CardType = 'Suspect' | 'Room' | 'Weapon';
 type CharacterName = 'Plum' | 'White' | 'Scarlet' | 'Green' | 'Mustard' | 'Peacock';
 type Position = { row: number, col: number };
@@ -37,7 +37,7 @@ class Utils {
 
 }
 
-class Board {
+export class Board {
     public fields: FieldType[][];
     public rooms: Room[];
     public weapons: Weapon[]
@@ -78,7 +78,7 @@ class Board {
 }
 
 
-class Suspect {
+export class Suspect {
     public name: CharacterName;
     public startingPosition: Position;
     public colour: string;
@@ -95,7 +95,7 @@ class Suspect {
 
 }
 
-class Player {
+export class Player {
     public character: Suspect;
     public knownSuspects: Suspect[];
     public knownWeapons: Weapon[];
@@ -129,7 +129,7 @@ class Player {
 
 }
 
-class Room {
+export class Room {
     public name: RoomName;
     public weapons: Weapon[];
     public suspects: Suspect[];
@@ -343,7 +343,7 @@ export default class Game {
         // select the first player in order
         // TODO: make sure it's the first player to the left
         const suggestantIndex = this.players.map(player => player.character === suggestant.character).indexOf(true);
-        let playerToAnswer = this.players[(suggestantIndex + 1) % this.players.length];
+        const playerToAnswer = this.players[(suggestantIndex + 1) % this.players.length];
         
         this.answer(playerToAnswer, suggestedSuspect, suggestedWeapon, suggestedRoom); 
         // if the player is holding any of the cards,
@@ -384,5 +384,5 @@ function play() {
         new Player(suspects[1], suspects, weapons, rooms),
     ];
 
-    let game = new Game(board, players, suspects, weapons, rooms);
+    const game = new Game(board, players, suspects, weapons, rooms);
 }

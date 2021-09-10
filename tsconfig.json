@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "esnext",
+    "target": "es2018",
     "module": "esnext",
     "strict": true,
     "jsx": "preserve",
@@ -13,7 +13,9 @@
     "sourceMap": true,
     "baseUrl": ".",
     "types": [
-      "webpack-env"
+      "webpack-env",
+      "mocha",
+      "chai"
     ],
     "paths": {
       "@/*": [
