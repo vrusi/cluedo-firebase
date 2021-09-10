@@ -336,6 +336,33 @@ export default class Game {
 
         return new Error(ErrorMessage.UNKNOWN);
     }
+
+
+    suggest(suggestant: Player, suggestedSuspect: Suspect, suggestedWeapon: Weapon, suggestedRoom: Room) {
+
+        // select the first player in order
+        // TODO: make sure it's the first player to the left
+        const suggestantIndex = this.players.map(player => player.character === suggestant.character).indexOf(true);
+        let playerToAnswer = this.players[(suggestantIndex + 1) % this.players.length];
+        
+        this.answer(playerToAnswer, suggestedSuspect, suggestedWeapon, suggestedRoom); 
+        // if the player is holding any of the cards,
+        // pick one to show the suggestand privately
+
+        // and end the round
+
+        // if no cards, say "I cannot answer"
+        // and select the next player
+
+    }
+
+    answer(respondent: Player, suggestedSuspect: Suspect, suggestedWeapon: Weapon, suggestedRoom: Room) {
+        // TODO when ui
+
+        const possibleAnwers = respondent.cards.filter(item => item === suggestedSuspect || item === suggestedWeapon || item === suggestedRoom);
+        
+        // 
+    }
 }
 
 import boardMap from "./boardMap";
