@@ -35,6 +35,26 @@ class Utils {
         return !this.isError(result);
     }
 
+    // https://stackoverflow.com/a/2450976
+    static shuffle(array: any[]) {
+        let currentIndex = array.length;
+        let randomIndex;
+      
+        // While there remain elements to shuffle...
+        while (currentIndex != 0) {
+      
+          // Pick a remaining element...
+          randomIndex = Math.floor(Math.random() * currentIndex);
+          currentIndex--;
+      
+          // And swap it with the current element.
+          [array[currentIndex], array[randomIndex]] = [
+            array[randomIndex], array[currentIndex]];
+        }
+      
+        return array;
+      }
+
 }
 
 export class Board {
@@ -63,15 +83,11 @@ export class Board {
     distributeWeapons() {
         this.weapons.forEach(
             weapon => {
-                let room;
-
-                do {
-                    room = this.rooms[Utils.getRandomInt(0, this.rooms.length)];
-
-                    if (room.hasNoWeapons) {
-                        room.weapons.push(weapon);
-                    }
-                } while (!room.hasNoWeapons);
+                let room = this.rooms[Utils.getRandomInt(0, this.rooms.length - 1)];
+                while(!room.hasNoWeapons){
+                    room = this.rooms[Utils.getRandomInt(0, this.rooms.length - 1)];
+                }
+                room.weapons.push(weapon);
             }
         );
     }
@@ -197,24 +213,37 @@ export default class Game {
         this.board.distributeWeapons();
         this.solution = this.generateSolution();
 
+        const cardsWithoutSolution = this.cards.filter(card => !this.solution?.includes(card));
+        const cardsToDistribute = Utils.shuffle(cardsWithoutSolution);
+        let playerToGiveCardTo = 0;
+        cardsToDistribute.forEach(card => {
+            this.players[playerToGiveCardTo++ % this.players.length].cards.push(card);
+        })
+
         // TODO: choose player with highest roll
         this.currentPlayer = this.randomPlayer;
+
+        this.status = 'Playing';
+    }
+
+    get cards(): (Suspect | Weapon | Room)[] {
+        return (this.suspects as any[]).concat(this.weapons).concat(this.rooms);
     }
 
     get randomPlayer(): Player {
-        return this.players[Utils.getRandomInt(0, this.players.length)] as Player;
+        return this.players[Utils.getRandomInt(0, this.players.length - 1)] as Player;
     }
 
     get randomSuspect(): Suspect {
-        return this.suspects[Utils.getRandomInt(0, this.suspects.length)] as Suspect;
+        return this.suspects[Utils.getRandomInt(0, this.suspects.length - 1)] as Suspect;
     }
 
     get randomWeapon(): Weapon {
-        return this.weapons[Utils.getRandomInt(0, this.weapons.length)] as Weapon;
+        return this.weapons[Utils.getRandomInt(0, this.weapons.length - 1)] as Weapon;
     }
 
     get randomRoom(): Room {
-        return this.rooms[Utils.getRandomInt(0, this.rooms.length)] as Room;
+        return this.rooms[Utils.getRandomInt(0, this.rooms.length - 1)] as Room;
     }
 
     get roll(): number {
