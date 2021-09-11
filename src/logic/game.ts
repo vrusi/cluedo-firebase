@@ -3,15 +3,15 @@ type RoomName = 'Courtyard' | 'Game Room' | 'Study' | 'Dining Room' | 'Garage' |
 export type Weapon = 'Rope' | 'Dagger' | 'Wrench' | 'Pistol' | 'Candlestick' | 'Lead Pipe';
 type CardType = 'Suspect' | 'Room' | 'Weapon';
 type CharacterName = 'Plum' | 'White' | 'Scarlet' | 'Green' | 'Mustard' | 'Peacock';
-type Position = { row: number, col: number };
+export type Position = { row: number, col: number };
 type GameStatus = 'Created' | 'Playing' | 'Over';
 type Result<T> = T | Error;
 
-enum Direction {
-    UP,
-    DOWN,
-    RIGHT,
-    LEFT,
+export enum Direction {
+    NORTH,
+    SOUTH,
+    EAST,
+    WEST,
 }
 
 enum ErrorMessage {
@@ -259,7 +259,7 @@ export default class Game {
         let newField;
 
         switch(direction) {
-            case Direction.UP: 
+            case Direction.NORTH: 
                 newPosition = { row: player.position.row - 1, col: player.position.col } as Position;
             
                 // check for out of bounds error
@@ -284,7 +284,7 @@ export default class Game {
 
                 return true;  
             
-            case Direction.DOWN:
+            case Direction.SOUTH:
                 newPosition = { row: player.position.row + 1, col: player.position.col } as Position;
                 
                 // check for out of bounds error
@@ -309,7 +309,7 @@ export default class Game {
 
                 return true;
                 
-            case Direction.RIGHT:
+            case Direction.EAST:
                 newPosition = { row: player.position.row, col: player.position.col + 1 } as Position;
                 
                 // check for out of bounds error
@@ -334,7 +334,7 @@ export default class Game {
 
                 return true;
 
-            case Direction.LEFT:
+            case Direction.WEST:
                 newPosition = { row: player.position.row, col: player.position.col - 1 } as Position;
                 
                 // check for out of bounds error
@@ -370,7 +370,7 @@ export default class Game {
     suggest(suggestant: Player, suggestedSuspect: Suspect, suggestedWeapon: Weapon, suggestedRoom: Room) {
 
         // select the first player in order
-        // TODO: make sure it's the first player to the left
+        // TODO: make sure it's the first player to the WEST
         const suggestantIndex = this.players.map(player => player.character === suggestant.character).indexOf(true);
         const playerToAnswer = this.players[(suggestantIndex + 1) % this.players.length];
         
@@ -392,26 +392,4 @@ export default class Game {
         
         // 
     }
-}
-
-import boardMap from "./boardMap";
-
-function play() { 
-    const rooms = [new Room('Courtyard'), new Room('Game Room'), new Room('Study'), new Room('Dining Room'), new Room('Garage'), new Room('Living Room'), new Room('Kitchen'), new Room('Bedroom'), new Room('Bathroom')];
-    const weapons = ['Rope', 'Dagger', 'Wrench', 'Pistol', 'Candlestick', 'Lead Pipe'] as Weapon[];
-    const suspects = [
-        new Suspect('Scarlet', { row: 24, col: 7}, '#690500'),
-        new Suspect('White', { row: 0, col: 9 }, '#cccccc'),
-        new Suspect('Green', { row: 0, col: 14 }, '#083d00'),
-        new Suspect('Plum', { row: 19, col: 23 }, '#370080'),
-        new Suspect('Peacock', { row: 6, col: 23 }, '#003c52'),
-        new Suspect('Mustard', { row: 17, col: 0 }, '#bf7900'),
-    ];
-    const board = new Board(boardMap as FieldType[][], rooms, weapons);
-    const players = [
-        new Player(suspects[0], suspects, weapons, rooms),
-        new Player(suspects[1], suspects, weapons, rooms),
-    ];
-
-    const game = new Game(board, players, suspects, weapons, rooms);
 }
