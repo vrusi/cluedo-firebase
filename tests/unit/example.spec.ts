@@ -11,7 +11,7 @@ describe('Game: initialisation', () => {
   let game: Game;
 
   beforeEach(() => {
-    rooms = [new Room('Courtyard'), new Room('Game Room'), new Room('Study'), new Room('Dining Room'), new Room('Garage'), new Room('Living Room'), new Room('Kitchen'), new Room('Bedroom'), new Room('Bathroom')];
+    rooms = [ new Room('Kitchen', '1'), new Room('Ballroom', '2'), new Room('Conservatory', '3'), new Room('Dining Room', '4'), new Room('Billiard Room', '5'), new Room('Lounge', '6'),  new Room('Library', '7'),  new Room('Hall', '8'), new Room('Study', '9')];
     weapons = ['Rope', 'Dagger', 'Wrench', 'Pistol', 'Candlestick', 'Lead Pipe'] as Weapon[];
     suspects = [
       new Suspect('Scarlet', { row: 24, col: 7 }, '#690500'),

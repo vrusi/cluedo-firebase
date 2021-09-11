@@ -1,5 +1,4 @@
 export type FieldType = '0' | 'P' | 'R' | 'C' | 'N' | 'E' | 'S' | 'W';
-type RoomName = 'Courtyard' | 'Game Room' | 'Study' | 'Dining Room' | 'Garage' | 'Living Room' | 'Kitchen' | 'Bedroom' | 'Bathroom';
 export type Weapon = 'Rope' | 'Dagger' | 'Wrench' | 'Pistol' | 'Candlestick' | 'Lead Pipe';
 type CardType = 'Suspect' | 'Room' | 'Weapon';
 type CharacterName = 'Plum' | 'White' | 'Scarlet' | 'Green' | 'Mustard' | 'Peacock';
@@ -147,20 +146,23 @@ export class Player {
 }
 
 export class Room {
-    public name: RoomName;
+    public name: string;
+    public id: string;
     public weapons: Weapon[];
     public suspects: Suspect[];
     public entrances: Position[];
     public passages: Room[];
 
     constructor(
-        name: RoomName,
+        name: string,
+        id : string,
         weapons?: Weapon[],
         suspects?: Suspect[],
         entrances?: Position[],
         passages?: Room[],
     ) {
         this.name = name;
+        this.id = id;
         this.weapons = weapons ?? [];
         this.suspects = suspects ?? [];
         this.entrances = entrances ?? [];
