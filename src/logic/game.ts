@@ -1,4 +1,4 @@
-export type FieldType = '0' | '1' | 'R' | 'C' | 'N' | 'E' | 'S' | 'W';
+export type FieldType = '0' | 'P' | 'R' | 'C' | 'N' | 'E' | 'S' | 'W';
 type RoomName = 'Courtyard' | 'Game Room' | 'Study' | 'Dining Room' | 'Garage' | 'Living Room' | 'Kitchen' | 'Bedroom' | 'Bathroom';
 export type Weapon = 'Rope' | 'Dagger' | 'Wrench' | 'Pistol' | 'Candlestick' | 'Lead Pipe';
 type CardType = 'Suspect' | 'Room' | 'Weapon';
@@ -17,6 +17,7 @@ export enum Direction {
 enum ErrorMessage {
     BOUNDS = 'The player tried to step out of the bounds.',
     WALL = 'The player tried to walk into a wall.',
+    PLAYER = 'The player tried to walk into another player',
     UNKNOWN = 'Something went wrong.',
 }
 
@@ -39,21 +40,21 @@ class Utils {
     static shuffle(array: any[]) {
         let currentIndex = array.length;
         let randomIndex;
-      
+
         // While there remain elements to shuffle...
         while (currentIndex != 0) {
-      
-          // Pick a remaining element...
-          randomIndex = Math.floor(Math.random() * currentIndex);
-          currentIndex--;
-      
-          // And swap it with the current element.
-          [array[currentIndex], array[randomIndex]] = [
-            array[randomIndex], array[currentIndex]];
+
+            // Pick a remaining element...
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+
+            // And swap it with the current element.
+            [array[currentIndex], array[randomIndex]] = [
+                array[randomIndex], array[currentIndex]];
         }
-      
+
         return array;
-      }
+    }
 
 }
 
@@ -84,7 +85,7 @@ export class Board {
         this.weapons.forEach(
             weapon => {
                 let room = this.rooms[Utils.getRandomInt(0, this.rooms.length - 1)];
-                while(!room.hasNoWeapons){
+                while (!room.hasNoWeapons) {
                     room = this.rooms[Utils.getRandomInt(0, this.rooms.length - 1)];
                 }
                 room.weapons.push(weapon);
@@ -175,8 +176,8 @@ type possibleRoll = 1 | 2 | 3 | 4 | 5 | 6;
 
 class Dice {
     public currentRoll: possibleRoll | null = null;
-    
-    public get roll(){
+
+    public get roll() {
         this.currentRoll = Utils.getRandomInt(1, 6) as possibleRoll;
         return this.currentRoll;
     }
@@ -250,6 +251,10 @@ export default class Game {
         return Utils.getRandomInt(1, 6);
     }
 
+    generateMap() {
+
+    }
+
     generateSolution(): [Suspect, Weapon, Room] {
         return [this.randomSuspect, this.randomWeapon, this.randomRoom];
     }
@@ -258,35 +263,40 @@ export default class Game {
         let newPosition;
         let newField;
 
-        switch(direction) {
-            case Direction.NORTH: 
+        switch (direction) {
+            case Direction.NORTH:
                 newPosition = { row: player.position.row - 1, col: player.position.col } as Position;
-            
+
                 // check for out of bounds error
                 if (newPosition.row < 0) {
                     return new Error(ErrorMessage.BOUNDS);
                 }
-                
+
                 // check for wall error 
                 newField = this.board.fields[newPosition.row][newPosition.col];
-                if (newField !== 'C' && newField !== 'E') {
+                if (!isNaN(+newField)) {
                     return new Error(ErrorMessage.WALL);
                 }
-                
+
+                // check for walk into another player error
+                if (newField === 'P') {
+                    return new Error(ErrorMessage.PLAYER);
+                }
+
                 // rewrite the board field the player is standing on to its original value
                 this.board.fields[player.position.row][player.position.col] = player.currentField;
-                
+
                 // rewrite the field the player will be standing on to the new value
-                this.board.fields[newPosition.row][newPosition.col] = '1';
+                this.board.fields[newPosition.row][newPosition.col] = 'P';
 
                 // rewrite player position
                 player.position = newPosition;
 
-                return true;  
-            
+                return true;
+
             case Direction.SOUTH:
                 newPosition = { row: player.position.row + 1, col: player.position.col } as Position;
-                
+
                 // check for out of bounds error
                 if (newPosition.row > this.board.height - 1) {
                     return new Error(ErrorMessage.BOUNDS);
@@ -294,24 +304,29 @@ export default class Game {
 
                 // check for wall error
                 newField = this.board.fields[newPosition.row][newPosition.col];
-                if (newField !== 'C' && newField !== 'E') {
+                if (!isNaN(+newField)) {
                     return new Error(ErrorMessage.WALL);
                 }
-                
+
+                // check for walk into another player error
+                if (newField === 'P') {
+                    return new Error(ErrorMessage.PLAYER);
+                }
+
                 // rewrite the board field the player is standing on to its original value
                 this.board.fields[player.position.row][player.position.col] = player.currentField;
-                
+
                 // rewrite the field the player will be standing on to the new value
-                this.board.fields[newPosition.row][newPosition.col] = '1';
+                this.board.fields[newPosition.row][newPosition.col] = 'P';
 
                 // rewrite player position
                 player.position = newPosition;
 
                 return true;
-                
+
             case Direction.EAST:
                 newPosition = { row: player.position.row, col: player.position.col + 1 } as Position;
-                
+
                 // check for out of bounds error
                 if (newPosition.col > this.board.width - 1) {
                     return new Error(ErrorMessage.BOUNDS);
@@ -319,15 +334,20 @@ export default class Game {
 
                 // check for wall error
                 newField = this.board.fields[newPosition.row][newPosition.col];
-                if (newField !== 'C' && newField !== 'E') {
+                if (!isNaN(+newField)) {
                     return new Error(ErrorMessage.WALL);
+                }
+
+                // check for walk into another player error
+                if (newField === 'P') {
+                    return new Error(ErrorMessage.PLAYER);
                 }
 
                 // rewrite the board field the player is standing on to its original value
                 this.board.fields[player.position.row][player.position.col] = player.currentField;
-                
+
                 // rewrite the field the player will be standing on to the new value
-                this.board.fields[newPosition.row][newPosition.col] = '1';
+                this.board.fields[newPosition.row][newPosition.col] = 'P';
 
                 // rewrite player position
                 player.position = newPosition;
@@ -336,7 +356,7 @@ export default class Game {
 
             case Direction.WEST:
                 newPosition = { row: player.position.row, col: player.position.col - 1 } as Position;
-                
+
                 // check for out of bounds error
                 if (newPosition.col < 0) {
                     return new Error(ErrorMessage.BOUNDS);
@@ -344,15 +364,20 @@ export default class Game {
 
                 // check for wall error
                 newField = this.board.fields[newPosition.row][newPosition.col];
-                if (newField !== 'C' && newField !== 'E') {
+                if (!isNaN(+newField)) {
                     return new Error(ErrorMessage.WALL);
                 }
-                
+
+                // check for walk into another player error
+                if (newField === 'P') {
+                    return new Error(ErrorMessage.PLAYER);
+                }
+
                 // rewrite the board field the player is standing on to its original value
                 this.board.fields[player.position.row][player.position.col] = player.currentField;
-                
+
                 // rewrite the field the player will be standing on to the new value
-                this.board.fields[newPosition.row][newPosition.col] = '1';
+                this.board.fields[newPosition.row][newPosition.col] = 'P';
 
                 // rewrite player position
                 player.position = newPosition;
@@ -361,7 +386,7 @@ export default class Game {
 
             default:
                 break;
-        } 
+        }
 
         return new Error(ErrorMessage.UNKNOWN);
     }
@@ -373,8 +398,8 @@ export default class Game {
         // TODO: make sure it's the first player to the WEST
         const suggestantIndex = this.players.map(player => player.character === suggestant.character).indexOf(true);
         const playerToAnswer = this.players[(suggestantIndex + 1) % this.players.length];
-        
-        this.answer(playerToAnswer, suggestedSuspect, suggestedWeapon, suggestedRoom); 
+
+        this.answer(playerToAnswer, suggestedSuspect, suggestedWeapon, suggestedRoom);
         // if the player is holding any of the cards,
         // pick one to show the suggestand privately
 
@@ -389,7 +414,7 @@ export default class Game {
         // TODO when ui
 
         const possibleAnwers = respondent.cards.filter(item => item === suggestedSuspect || item === suggestedWeapon || item === suggestedRoom);
-        
+
         // 
     }
 }

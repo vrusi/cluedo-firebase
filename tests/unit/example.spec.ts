@@ -107,7 +107,7 @@ describe('Game: movement', () => {
     const Scarlet = game.players[0];
     game.move(Scarlet, Direction.NORTH);
     assert.deepEqual(Scarlet.position, { row: 23, col: 7 });
-    assert.strictEqual(game.board.fields[23][7], '1');
+    assert.strictEqual(game.board.fields[23][7], 'P');
     assert.strictEqual(game.board.fields[24][7], 'C');
   });
 
@@ -115,7 +115,7 @@ describe('Game: movement', () => {
     const Plum = game.players[3];
     game.move(Plum, Direction.WEST);
     assert.deepEqual(Plum.position, { row: 19, col: 22 });
-    assert.strictEqual(game.board.fields[19][22], '1');
+    assert.strictEqual(game.board.fields[19][22], 'P');
     assert.strictEqual(game.board.fields[19][23], 'C');
   });
 
@@ -123,7 +123,7 @@ describe('Game: movement', () => {
     const Mustard = game.players[5];
     game.move(Mustard, Direction.EAST);
     assert.deepEqual(Mustard.position, { row: 17, col: 1 });
-    assert.strictEqual(game.board.fields[17][1], '1');
+    assert.strictEqual(game.board.fields[17][1], 'P');
     assert.strictEqual(game.board.fields[17][0], 'C');
   });
 
@@ -131,7 +131,7 @@ describe('Game: movement', () => {
     const White = game.players[1];
     game.move(White, Direction.SOUTH);
     assert.deepEqual(White.position, { row: 1, col: 9 });
-    assert.strictEqual(game.board.fields[1][9], '1');
+    assert.strictEqual(game.board.fields[1][9], 'P');
     assert.strictEqual(game.board.fields[0][9], 'C');
   });
 
@@ -139,22 +139,22 @@ describe('Game: movement', () => {
     const Scarlet = game.players[0];
     game.move(Scarlet, Direction.SOUTH);
     assert.deepEqual(Scarlet.position, Scarlet.character.startingPosition);
-    assert.strictEqual(game.board.fields[Scarlet.character.startingPosition.row][Scarlet.character.startingPosition.col], '1');
+    assert.strictEqual(game.board.fields[Scarlet.character.startingPosition.row][Scarlet.character.startingPosition.col], 'P');
 
     const White = game.players[1];
     game.move(White, Direction.NORTH);
     assert.deepEqual(White.position, White.character.startingPosition);
-    assert.strictEqual(game.board.fields[White.character.startingPosition.row][White.character.startingPosition.col], '1');
+    assert.strictEqual(game.board.fields[White.character.startingPosition.row][White.character.startingPosition.col], 'P');
 
     const Plum = game.players[3];
     game.move(Plum, Direction.EAST);
     assert.deepEqual(Plum.position, Plum.character.startingPosition);
-    assert.strictEqual(game.board.fields[Plum.character.startingPosition.row][Plum.character.startingPosition.col], '1');
+    assert.strictEqual(game.board.fields[Plum.character.startingPosition.row][Plum.character.startingPosition.col], 'P');
 
     const Mustard = game.players[5];
     game.move(Mustard, Direction.WEST);
     assert.deepEqual(Mustard.position, Mustard.character.startingPosition);
-    assert.strictEqual(game.board.fields[Mustard.character.startingPosition.row][Mustard.character.startingPosition.col], '1');
+    assert.strictEqual(game.board.fields[Mustard.character.startingPosition.row][Mustard.character.startingPosition.col], 'P');
   });
 
   it('does not move the player into a wall', () => {
@@ -162,16 +162,16 @@ describe('Game: movement', () => {
     game.move(Scarlet, Direction.NORTH);
     game.move(Scarlet, Direction.WEST);
     assert.deepEqual(Scarlet.position, { row: Scarlet.character.startingPosition.row - 1, col: Scarlet.character.startingPosition.col });
-    assert.strictEqual(game.board.fields[Scarlet.character.startingPosition.row - 1][Scarlet.character.startingPosition.col], '1');
+    assert.strictEqual(game.board.fields[Scarlet.character.startingPosition.row - 1][Scarlet.character.startingPosition.col], 'P');
     assert.strictEqual(game.board.fields[Scarlet.character.startingPosition.row][Scarlet.character.startingPosition.col], 'C');
-    assert.strictEqual(game.board.fields[Scarlet.character.startingPosition.row - 1][Scarlet.character.startingPosition.col - 1], 'R');
+    assert.strictEqual(game.board.fields[Scarlet.character.startingPosition.row - 1][Scarlet.character.startingPosition.col - 1], '6');
   });
 
   it('does not move the player into a void field', () => {
     const Scarlet = game.players[0];
     game.move(Scarlet, Direction.EAST);
     assert.deepEqual(Scarlet.position, Scarlet.character.startingPosition);
-    assert.strictEqual(game.board.fields[Scarlet.character.startingPosition.row][Scarlet.character.startingPosition.col], '1');
+    assert.strictEqual(game.board.fields[Scarlet.character.startingPosition.row][Scarlet.character.startingPosition.col], 'P');
     assert.strictEqual(game.board.fields[Scarlet.character.startingPosition.row][Scarlet.character.startingPosition.col + 1], '0');
 
     game.move(Scarlet, Direction.NORTH);
@@ -186,7 +186,7 @@ describe('Game: movement', () => {
     game.move(Scarlet, Direction.EAST);
     game.move(Scarlet, Direction.EAST);
     assert.deepEqual(Scarlet.position, {row: 16, col: 9});
-    assert.strictEqual(game.board.fields[16][9], '1');
+    assert.strictEqual(game.board.fields[16][9], 'P');
     assert.strictEqual(game.board.fields[16][8], 'C');
     assert.strictEqual(game.board.fields[16][10], '0');
   });
@@ -216,8 +216,8 @@ describe('Game: movement', () => {
     assert.deepEqual(Scarlet.position, {row: Scarlet.character.startingPosition.row - 7, col: Scarlet.character.startingPosition.col});
     assert.deepEqual(Mustard.position, {row: Mustard.character.startingPosition.row, col: Mustard.character.startingPosition.col + 6});
     assert.strictEqual(game.board.fields[17][5], 'C');
-    assert.strictEqual(game.board.fields[17][6], '1');
-    assert.strictEqual(game.board.fields[17][7], '1');
+    assert.strictEqual(game.board.fields[17][6], 'P');
+    assert.strictEqual(game.board.fields[17][7], 'P');
     assert.strictEqual(game.board.fields[17][8], 'C');
   })
 })
