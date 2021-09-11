@@ -14,10 +14,10 @@ export enum Direction {
 }
 
 enum ErrorMessage {
-    BOUNDS = 'The player tried to step out of the bounds.',
+    OUT_OF_BOUNDS = 'The player tried to step out of the bouds.',
     WALL = 'The player tried to walk into a wall.',
-    PLAYER = 'The player tried to walk into another player',
-    UNKNOWN = 'Something went wrong.',
+    ALREADY_OCCUPIED = 'The player tried to walk into another player.',
+    INVALID_DIRECTION = 'The player tried to walk into an invalid direction.',
 }
 
 class Utils {
@@ -263,134 +263,55 @@ export default class Game {
 
     move(player: Player, direction: Direction): Result<true> {
         let newPosition;
-        let newField;
 
-        switch (direction) {
-            case Direction.NORTH:
-                newPosition = { row: player.position.row - 1, col: player.position.col } as Position;
+        if (direction == Direction.NORTH) {
+            newPosition = { row: player.position.row - 1, col: player.position.col };
+            
+            if (newPosition.row < 0) {
+                return new Error(ErrorMessage.OUT_OF_BOUNDS);
+            }
 
-                // check for out of bounds error
-                if (newPosition.row < 0) {
-                    return new Error(ErrorMessage.BOUNDS);
-                }
+        } else if (direction == Direction.EAST) {
+            newPosition = { row: player.position.row, col: player.position.col + 1 };
 
-                // check for wall error 
-                newField = this.board.fields[newPosition.row][newPosition.col];
-                if (!isNaN(+newField)) {
-                    return new Error(ErrorMessage.WALL);
-                }
+            if (newPosition.col > this.board.width - 1) {
+                return new Error(ErrorMessage.OUT_OF_BOUNDS);
+            }
 
-                // check for walk into another player error
-                if (newField === 'P') {
-                    return new Error(ErrorMessage.PLAYER);
-                }
+        } else if (direction == Direction.SOUTH) {
+            newPosition = { row: player.position.row + 1, col: player.position.col };
 
-                // rewrite the board field the player is standing on to its original value
-                this.board.fields[player.position.row][player.position.col] = player.currentField;
+            if (newPosition.row > this.board.height - 1) {
+                return new Error(ErrorMessage.OUT_OF_BOUNDS);
+            }
 
-                // rewrite the field the player will be standing on to the new value
-                this.board.fields[newPosition.row][newPosition.col] = 'P';
+        } else if (direction == Direction.WEST) {
+            newPosition = { row: player.position.row, col: player.position.col - 1 };
 
-                // rewrite player position
-                player.position = newPosition;
+            if (newPosition.col < 0) {
+                return new Error(ErrorMessage.OUT_OF_BOUNDS);
+            }
 
-                return true;
-
-            case Direction.SOUTH:
-                newPosition = { row: player.position.row + 1, col: player.position.col } as Position;
-
-                // check for out of bounds error
-                if (newPosition.row > this.board.height - 1) {
-                    return new Error(ErrorMessage.BOUNDS);
-                }
-
-                // check for wall error
-                newField = this.board.fields[newPosition.row][newPosition.col];
-                if (!isNaN(+newField)) {
-                    return new Error(ErrorMessage.WALL);
-                }
-
-                // check for walk into another player error
-                if (newField === 'P') {
-                    return new Error(ErrorMessage.PLAYER);
-                }
-
-                // rewrite the board field the player is standing on to its original value
-                this.board.fields[player.position.row][player.position.col] = player.currentField;
-
-                // rewrite the field the player will be standing on to the new value
-                this.board.fields[newPosition.row][newPosition.col] = 'P';
-
-                // rewrite player position
-                player.position = newPosition;
-
-                return true;
-
-            case Direction.EAST:
-                newPosition = { row: player.position.row, col: player.position.col + 1 } as Position;
-
-                // check for out of bounds error
-                if (newPosition.col > this.board.width - 1) {
-                    return new Error(ErrorMessage.BOUNDS);
-                }
-
-                // check for wall error
-                newField = this.board.fields[newPosition.row][newPosition.col];
-                if (!isNaN(+newField)) {
-                    return new Error(ErrorMessage.WALL);
-                }
-
-                // check for walk into another player error
-                if (newField === 'P') {
-                    return new Error(ErrorMessage.PLAYER);
-                }
-
-                // rewrite the board field the player is standing on to its original value
-                this.board.fields[player.position.row][player.position.col] = player.currentField;
-
-                // rewrite the field the player will be standing on to the new value
-                this.board.fields[newPosition.row][newPosition.col] = 'P';
-
-                // rewrite player position
-                player.position = newPosition;
-
-                return true;
-
-            case Direction.WEST:
-                newPosition = { row: player.position.row, col: player.position.col - 1 } as Position;
-
-                // check for out of bounds error
-                if (newPosition.col < 0) {
-                    return new Error(ErrorMessage.BOUNDS);
-                }
-
-                // check for wall error
-                newField = this.board.fields[newPosition.row][newPosition.col];
-                if (!isNaN(+newField)) {
-                    return new Error(ErrorMessage.WALL);
-                }
-
-                // check for walk into another player error
-                if (newField === 'P') {
-                    return new Error(ErrorMessage.PLAYER);
-                }
-
-                // rewrite the board field the player is standing on to its original value
-                this.board.fields[player.position.row][player.position.col] = player.currentField;
-
-                // rewrite the field the player will be standing on to the new value
-                this.board.fields[newPosition.row][newPosition.col] = 'P';
-
-                // rewrite player position
-                player.position = newPosition;
-
-                return true;
-
-            default:
-                break;
+        } else {
+            return new Error(ErrorMessage.INVALID_DIRECTION);
         }
 
-        return new Error(ErrorMessage.UNKNOWN);
+
+        const newField = this.board.fields[newPosition.row][newPosition.col];
+
+        if (!isNaN(+newField)) {
+            return new Error(ErrorMessage.WALL);
+        }
+
+        if (newField === 'P') {
+            return new Error(ErrorMessage.ALREADY_OCCUPIED);
+        }
+
+        this.board.fields[player.position.row][player.position.col] = player.currentField;
+        this.board.fields[newPosition.row][newPosition.col] = 'P';
+        player.position = newPosition;
+
+        return true;
     }
 
 
