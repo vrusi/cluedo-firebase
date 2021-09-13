@@ -347,6 +347,65 @@ describe('Game: movement', () => {
   });
 
   it('does not let the player out of the room if another player is in the doorway', () => {
+    // get scarlet into the room
+    const Scarlet = game.players[0];
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.WEST);
+    game.move(Scarlet, Direction.SOUTH);
 
+    // have mustard block the doorway
+    const Mustard = game.players[5];
+    game.move(Mustard, Direction.EAST);
+    game.move(Mustard, Direction.EAST);
+    game.move(Mustard, Direction.EAST);
+    game.move(Mustard, Direction.EAST);
+    game.move(Mustard, Direction.EAST);
+    game.move(Mustard, Direction.EAST);
+    game.move(Mustard, Direction.SOUTH);
+
+    // make scarlet try to get out
+    const result = game.move(Scarlet, Direction.NORTH);
+    
+    assert.isTrue(Utils.isError(result));
+    assert.strictEqual((result as Error).message, ErrorMessage.ALREADY_OCCUPIED);
+
+    const room = game.rooms.find(room => room.id === '6');
+
+    assert.isTrue(room?.suspects.includes(Scarlet.character));
+  });
+
+  it('lets two players enter the same room', () => {
+    const Scarlet = game.players[0];
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.WEST);
+    game.move(Scarlet, Direction.SOUTH);
+
+    const Mustard = game.players[5];
+    game.move(Mustard, Direction.EAST);
+    game.move(Mustard, Direction.EAST);
+    game.move(Mustard, Direction.EAST);
+    game.move(Mustard, Direction.EAST);
+    game.move(Mustard, Direction.EAST);
+    game.move(Mustard, Direction.EAST);
+    game.move(Mustard, Direction.SOUTH);
+    game.move(Mustard, Direction.SOUTH);
+
+    assert.deepEqual(Scarlet.position, Mustard.position);
+    assert.deepEqual(Scarlet.position, { row: 19, col: 6 });
+    assert.deepEqual(Mustard.position, { row: 19, col: 6 });
+    
+    const room = game.rooms.find(room => room.id === '6');
+    assert.isTrue(room?.suspects.includes(Scarlet.character));
+    assert.isTrue(room?.suspects.includes(Mustard.character));
   });
 })
