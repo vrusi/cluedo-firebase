@@ -13,14 +13,14 @@ export enum Direction {
     WEST = 'W',
 }
 
-enum ErrorMessage {
-    OUT_OF_BOUNDS = 'The player tried to step out of the bouds.',
-    WALL = 'The player tried to walk into a wall.',
-    ALREADY_OCCUPIED = 'The player tried to walk into another player.',
-    INVALID_DIRECTION = 'The player tried to walk into an invalid direction.',
+export enum ErrorMessage {
+    OUT_OF_BOUNDS = 'Tried to walk out of bounds.',
+    WALL = 'Tried to walk into a wall.',
+    ALREADY_OCCUPIED = 'Tried to walk into another player.',
+    INVALID_DIRECTION = 'Invalid direction.',
 }
 
-class Utils {
+export class Utils {
     static getRandomInt(min: number, max: number) {
         min = Math.ceil(min);
         max = Math.floor(max);
@@ -350,27 +350,31 @@ export default class Game {
                 this.board.fields[player.position.row][player.position.col] = player.currentField;
                 player.currentField = this.board.fields[newPosition.row][newPosition.col];
 
+            } else {
+                return new Error(ErrorMessage.INVALID_DIRECTION);
             }
 
         } else if (possibleDirections.includes(player.currentField)) {
             // leaving a room
             let roomId: string;
-            if (player.currentField == Direction.NORTH) {
+            if (player.currentField == Direction.NORTH && direction == Direction.SOUTH) {
                 roomId = this.board.fields[player.position.row - 1][player.position.col];
-            } else if (player.currentField == Direction.EAST) {
+            } else if (player.currentField == Direction.EAST && direction == Direction.WEST) {
                 roomId = this.board.fields[player.position.row][player.position.col + 1];
-            } else if (player.currentField == Direction.SOUTH) {
+            } else if (player.currentField == Direction.SOUTH && direction == Direction.NORTH) {
                 roomId = this.board.fields[player.position.row + 1][player.position.col];
-            } else if (player.currentField == Direction.WEST) {
+            } else if (player.currentField == Direction.WEST && direction == Direction.EAST) {
                 roomId = this.board.fields[player.position.row][player.position.col - 1];
             }
 
             const room = this.rooms.find(room => room.id === roomId);
             if (room) {
                 room.suspects.splice(room.suspects.indexOf(player.character));
+                player.currentField = this.board.fields[newPosition.row][newPosition.col];
+                this.board.fields[newPosition.row][newPosition.col] = 'P';
+            } else {
+                return new Error(ErrorMessage.INVALID_DIRECTION);
             }
-            player.currentField = this.board.fields[newPosition.row][newPosition.col];
-            this.board.fields[newPosition.row][newPosition.col] = 'P';
 
         } else { 
             // moving through the corridor
@@ -379,7 +383,7 @@ export default class Game {
             this.board.fields[newPosition.row][newPosition.col] = 'P';
             
         }
-        
+
         player.position = newPosition;
 
         return true;
