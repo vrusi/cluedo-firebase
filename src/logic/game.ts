@@ -18,6 +18,7 @@ export enum ErrorMessage {
     WALL = 'Tried to walk into a wall.',
     ALREADY_OCCUPIED = 'Tried to walk into another player.',
     INVALID_DIRECTION = 'Invalid direction.',
+    INVALID_PASSAGE = 'No such passage.'
 }
 
 export class Utils {
@@ -53,6 +54,10 @@ export class Utils {
         }
 
         return array;
+    }
+
+    static isNumeric(string: string): boolean {
+        return !isNaN(+string);
     }
 
 }
@@ -143,6 +148,9 @@ export class Player {
         this.currentField = 'C';
     }
 
+    get currentRoom() {
+        return this.knownRooms.find(room => room.suspects.includes(this.character));
+    }
 }
 
 export class Room {
@@ -151,7 +159,7 @@ export class Room {
     public weapons: Weapon[];
     public suspects: Suspect[];
     public entrances: Position[];
-    public passages: Room[];
+    public passages: string[];
 
     constructor(
         name: string,
@@ -159,7 +167,7 @@ export class Room {
         weapons?: Weapon[],
         suspects?: Suspect[],
         entrances?: Position[],
-        passages?: Room[],
+        passages?: string[],
     ) {
         this.name = name;
         this.id = id;
@@ -261,12 +269,11 @@ export default class Game {
         return [this.randomSuspect, this.randomWeapon, this.randomRoom];
     }
 
-    move(player: Player, direction: Direction): Result<true> {
+    move(player: Player, direction: Direction): Result<number> {
         let newPosition = player.position;
 
         // using a passage
 
-        // moving through the corridor
         if (direction == Direction.NORTH) {
             newPosition = { row: player.position.row - 1, col: player.position.col };
 
@@ -301,8 +308,11 @@ export default class Game {
 
         const newField = this.board.fields[newPosition.row][newPosition.col];
 
-
-        if (!isNaN(+newField)) {
+        // the player can't step from a numeric field to a nonnumeric one
+        // without going through the door, eg NESW
+        const isRoomNewField = Utils.isNumeric(newField);
+        const isRoomCurrentField = Utils.isNumeric(player.currentField);
+        if ((isRoomNewField && !isRoomCurrentField) || (!isRoomNewField && isRoomCurrentField)) {
             return new Error(ErrorMessage.WALL);
         }
 
@@ -376,18 +386,30 @@ export default class Game {
                 return new Error(ErrorMessage.INVALID_DIRECTION);
             }
 
-        } else { 
-            // moving through the corridor
+        } else {
+            // moving through the corridor or room
             this.board.fields[player.position.row][player.position.col] = player.currentField;
             player.currentField = this.board.fields[newPosition.row][newPosition.col];
             this.board.fields[newPosition.row][newPosition.col] = 'P';
-            
+
+            // movement within the room is not counted
+            if (Utils.isNumeric(newField)) {
+                player.position = newPosition;
+                return 0;
+            }
         }
 
         player.position = newPosition;
-
-        return true;
+        return 1;
     }
+
+    /* movePassage(player: Player, roomToGo: Room) {
+        if (!player.currentRoom?.passages.includes(roomToGo.id)) {
+            return new Error(ErrorMessage.INVALID_PASSAGE);
+        } else {
+
+        }
+    } */
 
 
     suggest(suggestant: Player, suggestedSuspect: Suspect, suggestedWeapon: Weapon, suggestedRoom: Room) {

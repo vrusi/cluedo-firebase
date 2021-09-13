@@ -408,4 +408,8 @@ describe('Game: movement', () => {
     assert.isTrue(room?.suspects.includes(Scarlet.character));
     assert.isTrue(room?.suspects.includes(Mustard.character));
   });
+
+  it('moves the player through the passage', () => {
+    
+  })
 })
