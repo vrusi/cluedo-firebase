@@ -7,10 +7,10 @@ type GameStatus = 'Created' | 'Playing' | 'Over';
 type Result<T> = T | Error;
 
 export enum Direction {
-    NORTH,
-    SOUTH,
-    EAST,
-    WEST,
+    NORTH = 'N',
+    SOUTH = 'S',
+    EAST = 'E',
+    WEST = 'W',
 }
 
 enum ErrorMessage {
@@ -155,7 +155,7 @@ export class Room {
 
     constructor(
         name: string,
-        id : string,
+        id: string,
         weapons?: Weapon[],
         suspects?: Suspect[],
         entrances?: Position[],
@@ -262,11 +262,14 @@ export default class Game {
     }
 
     move(player: Player, direction: Direction): Result<true> {
-        let newPosition;
+        let newPosition = player.position;
 
+        // using a passage
+
+        // moving through the corridor
         if (direction == Direction.NORTH) {
             newPosition = { row: player.position.row - 1, col: player.position.col };
-            
+
             if (newPosition.row < 0) {
                 return new Error(ErrorMessage.OUT_OF_BOUNDS);
             }
@@ -296,8 +299,8 @@ export default class Game {
             return new Error(ErrorMessage.INVALID_DIRECTION);
         }
 
-
         const newField = this.board.fields[newPosition.row][newPosition.col];
+
 
         if (!isNaN(+newField)) {
             return new Error(ErrorMessage.WALL);
@@ -307,8 +310,76 @@ export default class Game {
             return new Error(ErrorMessage.ALREADY_OCCUPIED);
         }
 
-        this.board.fields[player.position.row][player.position.col] = player.currentField;
-        this.board.fields[newPosition.row][newPosition.col] = 'P';
+        const possibleDirections = [Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST] as FieldType[];
+
+        // entering a room
+        if (possibleDirections.includes(newField)) {
+
+            let roomId: string;
+            if (newField == Direction.NORTH) {
+                if (direction != Direction.NORTH) {
+                    return new Error(ErrorMessage.WALL);
+                }
+
+                roomId = this.board.fields[newPosition.row - 1][newPosition.col];
+
+            } else if (newField == Direction.EAST) {
+                if (direction != Direction.EAST) {
+                    return new Error(ErrorMessage.WALL);
+                }
+
+                roomId = this.board.fields[newPosition.row][newPosition.col + 1];
+
+            } else if (newField == Direction.SOUTH) {
+                if (direction != Direction.SOUTH) {
+                    return new Error(ErrorMessage.WALL);
+                }
+                roomId = this.board.fields[newPosition.row + 1][newPosition.col];
+
+            } else if (newField == Direction.WEST) {
+                if (direction != Direction.WEST) {
+                    return new Error(ErrorMessage.WALL);
+                }
+
+                roomId = this.board.fields[newPosition.row][newPosition.col - 1];
+            }
+
+            const room = this.rooms.find(room => room.id === roomId);
+            if (room) {
+                room.suspects.push(player.character);
+                this.board.fields[player.position.row][player.position.col] = player.currentField;
+                player.currentField = this.board.fields[newPosition.row][newPosition.col];
+
+            }
+
+        } else if (possibleDirections.includes(player.currentField)) {
+            // leaving a room
+            let roomId: string;
+            if (player.currentField == Direction.NORTH) {
+                roomId = this.board.fields[player.position.row - 1][player.position.col];
+            } else if (player.currentField == Direction.EAST) {
+                roomId = this.board.fields[player.position.row][player.position.col + 1];
+            } else if (player.currentField == Direction.SOUTH) {
+                roomId = this.board.fields[player.position.row + 1][player.position.col];
+            } else if (player.currentField == Direction.WEST) {
+                roomId = this.board.fields[player.position.row][player.position.col - 1];
+            }
+
+            const room = this.rooms.find(room => room.id === roomId);
+            if (room) {
+                room.suspects.splice(room.suspects.indexOf(player.character));
+            }
+            player.currentField = this.board.fields[newPosition.row][newPosition.col];
+            this.board.fields[newPosition.row][newPosition.col] = 'P';
+
+        } else { 
+            // moving through the corridor
+            this.board.fields[player.position.row][player.position.col] = player.currentField;
+            player.currentField = this.board.fields[newPosition.row][newPosition.col];
+            this.board.fields[newPosition.row][newPosition.col] = 'P';
+            
+        }
+        
         player.position = newPosition;
 
         return true;

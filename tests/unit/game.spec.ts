@@ -11,7 +11,7 @@ describe('Game: initialisation', () => {
   let game: Game;
 
   beforeEach(() => {
-    rooms = [ new Room('Kitchen', '1'), new Room('Ballroom', '2'), new Room('Conservatory', '3'), new Room('Dining Room', '4'), new Room('Billiard Room', '5'), new Room('Lounge', '6'),  new Room('Library', '7'),  new Room('Hall', '8'), new Room('Study', '9')];
+    rooms = [new Room('Kitchen', '1'), new Room('Ballroom', '2'), new Room('Conservatory', '3'), new Room('Dining Room', '4'), new Room('Billiard Room', '5'), new Room('Lounge', '6'), new Room('Library', '7'), new Room('Hall', '8'), new Room('Study', '9')];
     weapons = ['Rope', 'Dagger', 'Wrench', 'Pistol', 'Candlestick', 'Lead Pipe'] as Weapon[];
     suspects = [
       new Suspect('Scarlet', { row: 24, col: 7 }, '#690500'),
@@ -79,7 +79,7 @@ describe('Game: movement', () => {
   let game: Game;
 
   beforeEach(() => {
-    rooms = [ new Room('Kitchen', '1'), new Room('Ballroom', '2'), new Room('Conservatory', '3'), new Room('Dining Room', '4'), new Room('Billiard Room', '5'), new Room('Lounge', '6'),  new Room('Library', '7'),  new Room('Hall', '8'), new Room('Study', '9')];
+    rooms = [new Room('Kitchen', '1'), new Room('Ballroom', '2'), new Room('Conservatory', '3'), new Room('Dining Room', '4'), new Room('Billiard Room', '5'), new Room('Lounge', '6'), new Room('Library', '7'), new Room('Hall', '8'), new Room('Study', '9')];
     weapons = ['Rope', 'Dagger', 'Wrench', 'Pistol', 'Candlestick', 'Lead Pipe'] as Weapon[];
     suspects = [
       new Suspect('Scarlet', { row: 24, col: 7 }, '#690500'),
@@ -110,7 +110,7 @@ describe('Game: movement', () => {
     assert.strictEqual(game.board.fields[23][7], 'P');
     assert.strictEqual(game.board.fields[24][7], 'C');
   });
-
+  
   it('moves player west', () => {
     const Plum = game.players[3];
     game.move(Plum, Direction.WEST);
@@ -185,7 +185,7 @@ describe('Game: movement', () => {
     game.move(Scarlet, Direction.EAST);
     game.move(Scarlet, Direction.EAST);
     game.move(Scarlet, Direction.EAST);
-    assert.deepEqual(Scarlet.position, {row: 16, col: 9});
+    assert.deepEqual(Scarlet.position, { row: 16, col: 9 });
     assert.strictEqual(game.board.fields[16][9], 'P');
     assert.strictEqual(game.board.fields[16][8], 'C');
     assert.strictEqual(game.board.fields[16][10], '0');
@@ -213,11 +213,68 @@ describe('Game: movement', () => {
     game.move(Mustard, Direction.EAST);
     game.move(Mustard, Direction.EAST);
 
-    assert.deepEqual(Scarlet.position, {row: Scarlet.character.startingPosition.row - 7, col: Scarlet.character.startingPosition.col});
-    assert.deepEqual(Mustard.position, {row: Mustard.character.startingPosition.row, col: Mustard.character.startingPosition.col + 6});
+    assert.deepEqual(Scarlet.position, { row: Scarlet.character.startingPosition.row - 7, col: Scarlet.character.startingPosition.col });
+    assert.deepEqual(Mustard.position, { row: Mustard.character.startingPosition.row, col: Mustard.character.startingPosition.col + 6 });
     assert.strictEqual(game.board.fields[17][5], 'C');
     assert.strictEqual(game.board.fields[17][6], 'P');
     assert.strictEqual(game.board.fields[17][7], 'P');
     assert.strictEqual(game.board.fields[17][8], 'C');
   })
+
+  it('moves the player into a room', () => {
+    const Scarlet = game.players[0]
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.WEST);
+    game.move(Scarlet, Direction.SOUTH);
+
+    assert.deepEqual(Scarlet.position, { row: Scarlet.character.startingPosition.row - 5, col: Scarlet.character.startingPosition.col - 1 });
+    assert.strictEqual(game.board.fields[19][6], 'S');
+    assert.strictEqual(game.board.fields[18][6], 'C');
+    const room = game.rooms.find(room => room.id === game.board.fields[20][6]);
+    assert.isTrue(room?.suspects.includes(Scarlet.character));
+  });
+
+  it('does not move the player into the room when standing from the wrong side', () => {
+    const Scarlet = game.players[0];
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.WEST);
+    assert.deepEqual(Scarlet.position, { row: Scarlet.character.startingPosition.row - 5, col: Scarlet.character.startingPosition.col });
+    assert.strictEqual(game.board.fields[19][6], 'S');
+    assert.strictEqual(game.board.fields[19][7], 'P');
+
+    const room = game.rooms.find(room => room.id === game.board.fields[20][6]);
+    assert.isFalse(room?.suspects.includes(Scarlet.character));
+  });
+  
+  it('moves the player out of the room', () => {
+    // get in the room
+    const Scarlet = game.players[0]
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.WEST);
+    game.move(Scarlet, Direction.SOUTH);
+  
+    // get out 
+    game.move(Scarlet, Direction.NORTH);
+    assert.deepEqual(Scarlet.position, { row: Scarlet.character.startingPosition.row - 6, col: Scarlet.character.startingPosition.col - 1 });
+    assert.strictEqual(game.board.fields[19][6], 'S');
+    assert.strictEqual(game.board.fields[18][6], 'P');
+
+    const room = game.rooms.find(room => room.id === game.board.fields[20][6]);
+    assert.isFalse(room?.suspects.includes(Scarlet.character));
+  });
+  
 })
