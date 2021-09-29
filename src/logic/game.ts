@@ -271,7 +271,6 @@ export default class Game {
 
     move(player: Player, direction: Direction): Result<number> {
         let newPosition = player.position;
-
         // using a passage
 
         if (direction == Direction.NORTH) {
@@ -308,11 +307,17 @@ export default class Game {
 
         const newField = this.board.fields[newPosition.row][newPosition.col];
 
+        const possibleDirections = [Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST] as FieldType[];
+
         // the player can't step from a numeric field to a nonnumeric one
         // without going through the door, eg NESW
-        const isRoomNewField = Utils.isNumeric(newField);
-        const isRoomCurrentField = Utils.isNumeric(player.currentField);
-        if ((isRoomNewField && !isRoomCurrentField) || (!isRoomNewField && isRoomCurrentField)) {
+
+        if ((player.currentField === 'C' && Utils.isNumeric(newField)
+            || Utils.isNumeric(player.currentField) && newField === 'C')) {
+            return new Error(ErrorMessage.WALL);
+        }
+
+        if (newField === '0') {
             return new Error(ErrorMessage.WALL);
         }
 
@@ -320,7 +325,6 @@ export default class Game {
             return new Error(ErrorMessage.ALREADY_OCCUPIED);
         }
 
-        const possibleDirections = [Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST] as FieldType[];
 
         // entering a room
         if (possibleDirections.includes(newField)) {
@@ -365,37 +369,60 @@ export default class Game {
             }
 
         } else if (possibleDirections.includes(player.currentField)) {
-            // leaving a room
-            let roomId: string;
-            if (player.currentField == Direction.NORTH && direction == Direction.SOUTH) {
-                roomId = this.board.fields[player.position.row - 1][player.position.col];
-            } else if (player.currentField == Direction.EAST && direction == Direction.WEST) {
-                roomId = this.board.fields[player.position.row][player.position.col + 1];
-            } else if (player.currentField == Direction.SOUTH && direction == Direction.NORTH) {
-                roomId = this.board.fields[player.position.row + 1][player.position.col];
-            } else if (player.currentField == Direction.WEST && direction == Direction.EAST) {
-                roomId = this.board.fields[player.position.row][player.position.col - 1];
-            }
+            // leaving or moving further into a room
 
-            const room = this.rooms.find(room => room.id === roomId);
-            if (room) {
-                room.suspects.splice(room.suspects.indexOf(player.character));
+            // leaving a room 
+
+
+            if (player.currentField == Direction.NORTH && direction == Direction.SOUTH) {
+                const roomId = this.board.fields[player.position.row - 1][player.position.col];
+                const room = this.rooms.find(room => room.id === roomId);
+                room?.suspects.splice(room.suspects.indexOf(player.character));
                 player.currentField = this.board.fields[newPosition.row][newPosition.col];
                 this.board.fields[newPosition.row][newPosition.col] = 'P';
-            } else {
-                return new Error(ErrorMessage.INVALID_DIRECTION);
-            }
+
+            } else if (player.currentField == Direction.EAST && direction == Direction.WEST) {
+                const roomId = this.board.fields[player.position.row][player.position.col + 1];
+                const room = this.rooms.find(room => room.id === roomId);
+
+                room?.suspects.splice(room.suspects.indexOf(player.character));
+                player.currentField = this.board.fields[newPosition.row][newPosition.col];
+                this.board.fields[newPosition.row][newPosition.col] = 'P';
+            } else if (player.currentField == Direction.SOUTH && direction == Direction.NORTH) {
+                const roomId = this.board.fields[player.position.row + 1][player.position.col];
+                const room = this.rooms.find(room => room.id === roomId);
+
+                room?.suspects.splice(room.suspects.indexOf(player.character));
+                player.currentField = this.board.fields[newPosition.row][newPosition.col];
+                this.board.fields[newPosition.row][newPosition.col] = 'P';
+
+            } else if (player.currentField == Direction.WEST && direction == Direction.EAST) {
+                const roomId = this.board.fields[player.position.row][player.position.col - 1];
+                const room = this.rooms.find(room => room.id === roomId);
+                room?.suspects.splice(room.suspects.indexOf(player.character));
+                player.currentField = this.board.fields[newPosition.row][newPosition.col];
+                this.board.fields[newPosition.row][newPosition.col] = 'P';
+
+            } else
+
+                if (newField !== 'C') {
+                    player.currentField = this.board.fields[newPosition.row][newPosition.col];
+
+                } else {
+                    return new Error(ErrorMessage.WALL);
+                }
 
         } else {
             // moving through the corridor or room
             this.board.fields[player.position.row][player.position.col] = player.currentField;
             player.currentField = this.board.fields[newPosition.row][newPosition.col];
-            this.board.fields[newPosition.row][newPosition.col] = 'P';
 
             // movement within the room is not counted
             if (Utils.isNumeric(newField)) {
                 player.position = newPosition;
                 return 0;
+            } else {
+                this.board.fields[newPosition.row][newPosition.col] = 'P';
             }
         }
 
@@ -407,7 +434,7 @@ export default class Game {
         if (!player.currentRoom?.passages.includes(roomToGo.id)) {
             return new Error(ErrorMessage.INVALID_PASSAGE);
         } else {
-
+    
         }
     } */
 
