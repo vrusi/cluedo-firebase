@@ -1,24 +1,68 @@
-export type FieldType = '0' | 'P' | 'R' | 'C' | 'N' | 'E' | 'S' | 'W';
 export type Weapon = 'Rope' | 'Dagger' | 'Wrench' | 'Pistol' | 'Candlestick' | 'Lead Pipe';
 type CardType = 'Suspect' | 'Room' | 'Weapon';
 type CharacterName = 'Plum' | 'White' | 'Scarlet' | 'Green' | 'Mustard' | 'Peacock';
-export type Position = { row: number, col: number };
 type GameStatus = 'Created' | 'Playing' | 'Over';
 type Result<T> = T | Error;
 
 export enum Direction {
     NORTH = 'N',
-    SOUTH = 'S',
     EAST = 'E',
+    SOUTH = 'S',
     WEST = 'W',
 }
 
-export enum ErrorMessage {
-    OUT_OF_BOUNDS = 'Tried to walk out of bounds.',
-    WALL = 'Tried to walk into a wall.',
-    ALREADY_OCCUPIED = 'Tried to walk into another player.',
-    INVALID_DIRECTION = 'Invalid direction.',
-    INVALID_PASSAGE = 'No such passage.'
+export enum Field {
+CORRIDOR = 'C',
+    DOOR_NORTH = 'N',
+    DOOR_EAST = 'E',
+    DOOR_SOUTH = 'S',
+    DOOR_WEST = 'W',
+    TELEPORT = 'T',
+    SUSPECT = 'P'
+}
+
+export class Position {
+    public row: number;
+    public col: number;
+
+    constructor(row: number, col: number) {
+        this.row = row;
+        this.col = col;
+    }
+
+    get asString() {
+        return '[' + this.row + ', ' + this.col + ']';
+    }
+
+    isEqual(positionToCompare: Position) {
+        return this.row === positionToCompare.row && this.col === positionToCompare.col;
+    }
+}
+
+export enum ErrorType {
+    OUT_OF_BOUNDS = 'cannot walk out of bounds',
+    WALL = 'cannot walk into a wall',
+    INVALID_DIRECTION = 'invalid direction',
+    INVALID_MOVE = 'invalid move',
+    ROOM_NOT_FOUND = 'room not found',
+    TELEPORT_NOT_FOUND = 'teleport not found',
+    UNKNOWN = 'unknown error',
+    FIELD_TAKEN = 'cannot walk into another suspect',
+}
+
+export class GameError extends Error {
+    public type: ErrorType;
+    public message: string;
+
+    constructor(type: ErrorType, message?: string) {
+        super();
+        this.type = type;
+        this.message = message ?? '';
+    }
+
+    get fullMessage(): string {
+        return this.message === '' ? this.type : this.type + ' | ' + this.message;
+    }
 }
 
 export class Utils {
@@ -60,15 +104,20 @@ export class Utils {
         return !isNaN(+string);
     }
 
+    // https://stackoverflow.com/a/10050831
+    static range(size: number, startAt: number = 0) {
+        return [...Array(size).keys()].map(i => i + startAt);
+    }
+
 }
 
 export class Board {
-    public fields: FieldType[][];
+    public fields: string[][];
     public rooms: Room[];
     public weapons: Weapon[]
 
     constructor(
-        fields: FieldType[][],
+        fields: string[][],
         rooms: Room[],
         weapons: Weapon[],
     ) {
@@ -83,6 +132,26 @@ export class Board {
 
     get height() {
         return this.fields.length;
+    }
+
+    print() {
+        const header = ['+', ...Array(this.width).keys()];
+        const padding = (''+this.width).length + 1;
+        let headerFormatted = ''
+        header.forEach((item) => {
+            headerFormatted += (''+item).padStart(padding, ' ');
+        }); 
+        console.log(headerFormatted);
+
+        this.fields.forEach((row, index) => {
+            let rowFormatted = (''+index).padStart(padding, ' ');
+
+            row.forEach((col) => {
+                rowFormatted += (''+col).padStart(padding, ' ');
+            })
+
+            console.log(rowFormatted);
+        });
     }
 
     distributeWeapons() {
@@ -128,7 +197,7 @@ export class Player {
         state: 'unseen' | 'seen' | 'marked'
     }
     >;
-    public currentField: FieldType;
+    public currentField: string;
 
     constructor(
         character: Suspect,
@@ -148,37 +217,46 @@ export class Player {
         this.currentField = 'C';
     }
 
-    get currentRoom() {
-        return this.knownRooms.find(room => room.suspects.includes(this.character));
+    get currentRoom(): Room | null {
+        return this.knownRooms.find(room => room.suspects.includes(this.character)) ?? null;
     }
 }
+
+type Teleport = { destinationRoom: Room, destinationPosition: Position, sourceRoom: Room, sourcePosition: Position };
 
 export class Room {
     public name: string;
     public id: string;
     public weapons: Weapon[];
     public suspects: Suspect[];
-    public entrances: Position[];
-    public passages: string[];
+    public positions: Position[];
+    //public entrances: Position[];
+    public teleports: Teleport[];
 
     constructor(
         name: string,
         id: string,
+        positions: Position[],
         weapons?: Weapon[],
         suspects?: Suspect[],
-        entrances?: Position[],
-        passages?: string[],
+
+        teleports?: Teleport[],
     ) {
         this.name = name;
         this.id = id;
+        this.positions = positions;
         this.weapons = weapons ?? [];
         this.suspects = suspects ?? [];
-        this.entrances = entrances ?? [];
-        this.passages = passages ?? [];
-    }
 
+        this.teleports = teleports ?? [];
+    }
+    
     get hasNoWeapons() {
         return this.weapons.length === 0;
+    }
+
+    hasPosition(positionToFind: Position): boolean {
+        return !!this.positions.find( position => position.isEqual(positionToFind) );
     }
 }
 
@@ -194,6 +272,7 @@ class Dice {
 }
 
 export default class Game {
+    public boardOriginal: Board;
     public board: Board;
     public players: Player[];
     public suspects: Suspect[];
@@ -212,6 +291,7 @@ export default class Game {
         rooms: Room[],
         status?: GameStatus,
     ) {
+        this.boardOriginal = board;
         this.board = board;
         this.players = players;
         this.suspects = suspects;
@@ -269,175 +349,307 @@ export default class Game {
         return [this.randomSuspect, this.randomWeapon, this.randomRoom];
     }
 
-    move(player: Player, direction: Direction): Result<number> {
-        let newPosition = player.position;
-        // using a passage
-
-        if (direction == Direction.NORTH) {
-            newPosition = { row: player.position.row - 1, col: player.position.col };
-
-            if (newPosition.row < 0) {
-                return new Error(ErrorMessage.OUT_OF_BOUNDS);
-            }
-
-        } else if (direction == Direction.EAST) {
-            newPosition = { row: player.position.row, col: player.position.col + 1 };
-
-            if (newPosition.col > this.board.width - 1) {
-                return new Error(ErrorMessage.OUT_OF_BOUNDS);
-            }
-
-        } else if (direction == Direction.SOUTH) {
-            newPosition = { row: player.position.row + 1, col: player.position.col };
-
-            if (newPosition.row > this.board.height - 1) {
-                return new Error(ErrorMessage.OUT_OF_BOUNDS);
-            }
-
-        } else if (direction == Direction.WEST) {
-            newPosition = { row: player.position.row, col: player.position.col - 1 };
-
-            if (newPosition.col < 0) {
-                return new Error(ErrorMessage.OUT_OF_BOUNDS);
-            }
-
-        } else {
-            return new Error(ErrorMessage.INVALID_DIRECTION);
-        }
-
-        const newField = this.board.fields[newPosition.row][newPosition.col];
-
-        const possibleDirections = [Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST] as FieldType[];
-
-        // the player can't step from a numeric field to a nonnumeric one
-        // without going through the door, eg NESW
-
-        if ((player.currentField === 'C' && Utils.isNumeric(newField)
-            || Utils.isNumeric(player.currentField) && newField === 'C')) {
-            return new Error(ErrorMessage.WALL);
-        }
-
-        if (newField === '0') {
-            return new Error(ErrorMessage.WALL);
-        }
-
-        if (newField === 'P') {
-            return new Error(ErrorMessage.ALREADY_OCCUPIED);
-        }
-
-
-        // entering a room
-        if (possibleDirections.includes(newField)) {
-
-            let roomId: string;
-            if (newField == Direction.NORTH) {
-                if (direction != Direction.NORTH) {
-                    return new Error(ErrorMessage.WALL);
-                }
-
-                roomId = this.board.fields[newPosition.row - 1][newPosition.col];
-
-            } else if (newField == Direction.EAST) {
-                if (direction != Direction.EAST) {
-                    return new Error(ErrorMessage.WALL);
-                }
-
-                roomId = this.board.fields[newPosition.row][newPosition.col + 1];
-
-            } else if (newField == Direction.SOUTH) {
-                if (direction != Direction.SOUTH) {
-                    return new Error(ErrorMessage.WALL);
-                }
-                roomId = this.board.fields[newPosition.row + 1][newPosition.col];
-
-            } else if (newField == Direction.WEST) {
-                if (direction != Direction.WEST) {
-                    return new Error(ErrorMessage.WALL);
-                }
-
-                roomId = this.board.fields[newPosition.row][newPosition.col - 1];
-            }
-
-            const room = this.rooms.find(room => room.id === roomId);
-            if (room) {
-                room.suspects.push(player.character);
-                this.board.fields[player.position.row][player.position.col] = player.currentField;
-                player.currentField = this.board.fields[newPosition.row][newPosition.col];
-
-            } else {
-                return new Error(ErrorMessage.INVALID_DIRECTION);
-            }
-
-        } else if (possibleDirections.includes(player.currentField)) {
-            // leaving or moving further into a room
-
-            // leaving a room 
-
-
-            if (player.currentField == Direction.NORTH && direction == Direction.SOUTH) {
-                const roomId = this.board.fields[player.position.row - 1][player.position.col];
-                const room = this.rooms.find(room => room.id === roomId);
-                room?.suspects.splice(room.suspects.indexOf(player.character));
-                player.currentField = this.board.fields[newPosition.row][newPosition.col];
-                this.board.fields[newPosition.row][newPosition.col] = 'P';
-
-            } else if (player.currentField == Direction.EAST && direction == Direction.WEST) {
-                const roomId = this.board.fields[player.position.row][player.position.col + 1];
-                const room = this.rooms.find(room => room.id === roomId);
-
-                room?.suspects.splice(room.suspects.indexOf(player.character));
-                player.currentField = this.board.fields[newPosition.row][newPosition.col];
-                this.board.fields[newPosition.row][newPosition.col] = 'P';
-            } else if (player.currentField == Direction.SOUTH && direction == Direction.NORTH) {
-                const roomId = this.board.fields[player.position.row + 1][player.position.col];
-                const room = this.rooms.find(room => room.id === roomId);
-
-                room?.suspects.splice(room.suspects.indexOf(player.character));
-                player.currentField = this.board.fields[newPosition.row][newPosition.col];
-                this.board.fields[newPosition.row][newPosition.col] = 'P';
-
-            } else if (player.currentField == Direction.WEST && direction == Direction.EAST) {
-                const roomId = this.board.fields[player.position.row][player.position.col - 1];
-                const room = this.rooms.find(room => room.id === roomId);
-                room?.suspects.splice(room.suspects.indexOf(player.character));
-                player.currentField = this.board.fields[newPosition.row][newPosition.col];
-                this.board.fields[newPosition.row][newPosition.col] = 'P';
-
-            } else
-
-                if (newField !== 'C') {
-                    player.currentField = this.board.fields[newPosition.row][newPosition.col];
-
-                } else {
-                    return new Error(ErrorMessage.WALL);
-                }
-
-        } else {
-            // moving through the corridor or room
-            this.board.fields[player.position.row][player.position.col] = player.currentField;
-            player.currentField = this.board.fields[newPosition.row][newPosition.col];
-
-            // movement within the room is not counted
-            if (Utils.isNumeric(newField)) {
-                player.position = newPosition;
-                return 0;
-            } else {
-                this.board.fields[newPosition.row][newPosition.col] = 'P';
-            }
-        }
-
-        player.position = newPosition;
-        return 1;
+    getFieldFromPosition(position: Position): string {
+        return this.board.fields[position.row][position.col];
     }
 
-    /* movePassage(player: Player, roomToGo: Room) {
-        if (!player.currentRoom?.passages.includes(roomToGo.id)) {
-            return new Error(ErrorMessage.INVALID_PASSAGE);
-        } else {
-    
-        }
-    } */
+    isDirectionNorth(direction: Direction) {
+        return direction === Direction.NORTH;
+    }
 
+    isDirectionEast(direction: Direction) {
+        return direction === Direction.EAST;
+    }
+
+    isDirectionSouth(direction: Direction) {
+        return direction === Direction.SOUTH;
+    }
+
+    isDirectionWest(direction: Direction) {
+        return direction === Direction.WEST;
+    }
+
+    getNextPosition(positionCurrent: Position, direction: Direction) {
+        let positionNew = positionCurrent;
+
+        if (this.isDirectionNorth(direction)) {
+            positionNew = new Position(positionCurrent.row - 1, positionCurrent.col);
+
+            if (positionNew.row < 0) {
+                return new GameError(ErrorType.OUT_OF_BOUNDS, positionNew.asString);
+            } else {
+                return positionNew;
+            }
+
+        } else if (this.isDirectionEast(direction)) {
+            positionNew = new Position(positionCurrent.row, positionCurrent.col + 1)
+
+            if (positionNew.col > this.board.width - 1) {
+                return new GameError(ErrorType.OUT_OF_BOUNDS, positionNew.asString);
+            } else {
+                return positionNew;
+            }
+
+        } else if (this.isDirectionSouth(direction)) {
+            positionNew = new Position(positionCurrent.row + 1, positionCurrent.col)
+
+            if (positionNew.row > this.board.height - 1) {
+                return new GameError(ErrorType.OUT_OF_BOUNDS, positionNew.asString);
+            } else {
+                return positionNew;
+            }
+
+        } else if (this.isDirectionWest(direction)) {
+            positionNew = new Position(positionCurrent.row, positionCurrent.col - 1)
+
+            if (positionNew.col < 0) {
+                return new GameError(ErrorType.OUT_OF_BOUNDS, positionNew.asString);
+            } else {
+                return positionNew;
+            }
+
+        } else {
+            return new GameError(ErrorType.INVALID_DIRECTION, direction);
+        }
+    }
+
+    isFieldCorridor(field: string) {
+        return field === Field.CORRIDOR;
+    }
+
+    isFieldDoor(field: string) {
+        return field === Field.DOOR_NORTH ||
+            field === Field.DOOR_EAST ||
+            field === Field.DOOR_SOUTH ||
+            field === Field.DOOR_WEST;
+    }
+
+    isFieldRoom(field: string) {
+        const startsWithZero = field[0] === '0';
+        return !startsWithZero && Utils.isNumeric(field);
+    }
+
+    isFieldTeleport(field: string) {
+        return field === Field.TELEPORT;
+    }
+
+    isFieldSuspect(field: string) {
+        return field === Field.SUSPECT;
+    }
+
+    boardWrite(position: Position, field: string) {
+        this.board.fields[position.row][position.col] = field;
+    }
+
+    takeStep(player: Player, nextPosition: Position, nextField: string) {
+        this.boardWrite(player.position, player.currentField);
+        player.currentField = nextField;
+        player.position = nextPosition;
+        this.boardWrite(nextPosition, Field.SUSPECT);
+    }
+
+    isOppositeDirection(field: string, direction: Direction) {
+        return (field === Field.DOOR_SOUTH && direction === Direction.NORTH) ||
+            (field === Field.DOOR_WEST && direction === Direction.EAST) ||
+            (field === Field.DOOR_NORTH && direction === Direction.SOUTH) ||
+            (field === Field.DOOR_EAST && direction === Direction.WEST);
+    }
+
+    isSameDirection(field: string, direction: Direction) {
+        return (field === Field.DOOR_NORTH && direction === Direction.NORTH) ||
+            (field === Field.DOOR_EAST && direction === Direction.EAST) ||
+            (field === Field.DOOR_SOUTH && direction === Direction.SOUTH) ||
+            (field === Field.DOOR_WEST && direction === Direction.WEST);
+    }
+
+    getRoomByPosition(position: Position): Result<Room> {
+        return this.rooms.find(room => room.hasPosition(position)) ?? new GameError(ErrorType.ROOM_NOT_FOUND, position.asString);
+    }
+
+    removeSuspectFromRoomByPosition(position: Position, suspectToRemove: Suspect): Result<boolean> {
+        const room = this.getRoomByPosition(position);
+        if (Utils.isError(room)) {
+            return room;
+        } else {
+            room.suspects = room.suspects.filter(suspect => suspect.name != suspectToRemove.name);
+            return true;
+        }
+    }
+
+    addSuspectToRoomByPosition(position: Position, suspect: Suspect): Result<boolean> {
+        const room = this.getRoomByPosition(position);
+        if (Utils.isError(room)) {
+            return room;
+        } else {
+            room.suspects.push(suspect);
+            return true;
+        }
+    }
+
+    moveToCorridor(player: Player, nextPosition: Position, nextField: string, direction: Direction): Result<number> {
+        if (this.isFieldCorridor(player.currentField)) {
+            // moving through the corridor
+            this.takeStep(player, nextPosition, nextField);
+            return 1;
+
+        } else if (this.isFieldDoor(player.currentField)) {
+            // leaving a room
+            if (this.isOppositeDirection(player.currentField, direction)) {
+                const result = this.removeSuspectFromRoomByPosition(player.position, player.character);
+                if (Utils.isError(result)) {
+                    return result;
+                } else {
+                    this.takeStep(player, nextPosition, nextField);
+                    return 1;
+                }
+            }
+        }
+
+        return new GameError(ErrorType.WALL, player.currentField + ' -> ' + nextField + ' at ' + nextPosition.asString + ', ' + direction);
+    }
+
+    moveToDoor(player: Player, nextPosition: Position, nextField: string, direction: Direction): Result<number> {
+        if (this.isFieldCorridor(player.currentField)) {
+            // entering a room
+            if (this.isSameDirection(nextField, direction)) {                
+                
+                const result = this.addSuspectToRoomByPosition(nextPosition, player.character);
+                
+                if (Utils.isError(result)) {
+                    return result;
+                } else {
+                    this.takeStep(player, nextPosition, nextField);
+                    return 1;
+                }
+            }
+
+        } else if (this.isFieldRoom(player.currentField)) {
+            // leaving a room
+            this.takeStep(player, nextPosition, nextField);
+            return 1;
+
+        } else if (this.isFieldDoor(player.currentField)) {
+            // moving through joining rooms
+            if (this.isSameDirection(nextField, direction) && this.isOppositeDirection(player.currentField, direction)) {
+                const nextRoom = this.rooms.find(room => room.hasPosition(nextPosition));
+                if (!nextRoom) {
+                    return new GameError(ErrorType.ROOM_NOT_FOUND, nextPosition.asString);
+                }
+                const currentRoom = player.currentRoom;
+                if (!currentRoom) {
+                    return new GameError(ErrorType.ROOM_NOT_FOUND, player.position.asString);
+                }
+
+                let result = this.removeSuspectFromRoomByPosition(player.position, player.character);
+                if (Utils.isError(result)) {
+                    return result;
+                }
+
+                result = this.addSuspectToRoomByPosition(nextPosition, player.character);
+                if (Utils.isError(result)) {
+                    return result;
+
+                } else {
+                    this.takeStep(player, nextPosition, nextField);
+                    return 0;
+                }
+            }
+        }
+
+        return new GameError(ErrorType.WALL, player.currentField + ' -> ' + nextField + ' at ' + nextPosition.asString + ', ' + direction);
+    }
+
+    moveToRoom(player: Player, nextPosition: Position, nextField: string) {
+        if (this.isFieldRoom(player.currentField)) {
+            // walking inside a room
+            if (player.currentField === nextField) {
+                this.takeStep(player, nextPosition, nextField);
+                return 1;
+            }
+
+        } else if (this.isFieldDoor(player.currentField)) {
+            // entering a room 
+            this.takeStep(player, nextPosition, nextField);
+            return 1;
+
+        } else if (this.isFieldTeleport(player.currentField)) {
+            // leaving a teleport
+            this.takeStep(player, nextPosition, nextField);
+            return 0;
+        }
+
+        return new GameError(ErrorType.WALL, player.currentField + ' -> ' + nextField + ' at ' + nextPosition.asString);
+    }
+
+    teleport(player: Player,) {
+        const currentRoom = player.currentRoom;
+        if (!currentRoom) { return new GameError(ErrorType.ROOM_NOT_FOUND, player.currentRoom === null ? 'player.currentRoom = null' : 'player.currentRoom = ' + player.currentRoom); }
+
+        const teleport = (currentRoom.teleports as Teleport[]).find(teleport => teleport.sourcePosition === player.position);
+        if (!teleport) { return new GameError(ErrorType.TELEPORT_NOT_FOUND, 'no teleport in player location: curren field ' + player.currentField + ' at ' + player.position.asString); }
+
+        const destionationRoom = teleport.destinationRoom;
+        if (!destionationRoom) { return new GameError(ErrorType.ROOM_NOT_FOUND, 'teleport from ' + teleport.sourcePosition.asString + ' ' + teleport.sourceRoom.name + 'has no destination room'); }
+
+        currentRoom.suspects = (currentRoom.suspects as Suspect[]).filter(suspect => suspect.name !== player.character.name);
+        destionationRoom.suspects.push(player.character);
+        player.position = teleport.destinationPosition;
+        return 0;
+    }
+
+    moveToTeleport(player: Player, nextPosition: Position, nextField: string): Result<number> {
+        if (this.isFieldRoom(player.currentField)) {
+            this.takeStep(player, nextPosition, nextField);
+            return this.teleport(player);
+        } else {
+            return new GameError(ErrorType.INVALID_MOVE, player.currentField + ' -> ' + nextField + ' at ' + nextPosition.asString);
+        }
+    }
+    
+    getPlayerByPosition(position: Position): Player | undefined {
+        return this.players.find(player => player.position.isEqual(position));
+    }
+    
+    moveToSuspect(player: Player, nextPosition: Position, nextField: string): Result<number> {
+        const suspectToBeSteppedOn = this.getPlayerByPosition(nextPosition) as Player;
+        if (this.isFieldRoom(player.currentField) || this.isFieldDoor(player.currentField) && this.isFieldSuspect(nextField) && this.isFieldRoom(suspectToBeSteppedOn.currentField)) {
+            this.takeStep(player, nextPosition, suspectToBeSteppedOn.currentField);
+            return 0;
+        } else {
+            return new GameError(ErrorType.FIELD_TAKEN, 'moved into another suspect outside of a room');
+        }
+    }
+
+    move(player: Player, direction: Direction): Result<number> {
+        const nextPosition = this.getNextPosition(player.position, direction);
+
+        if (Utils.isError(nextPosition)) { return nextPosition; }
+
+        const nextField = this.getFieldFromPosition(nextPosition);
+        let result;
+
+        if (this.isFieldCorridor(nextField)) {
+            result = this.moveToCorridor(player, nextPosition, nextField, direction);
+            return result;
+
+        } else if (this.isFieldDoor(nextField)) {
+            result = this.moveToDoor(player, nextPosition, nextField, direction);
+
+        } else if (this.isFieldRoom(nextField)) {
+            result = this.moveToRoom(player, nextPosition, nextField);
+
+        } else if (this.isFieldTeleport(nextField)) {
+            result = this.moveToTeleport(player, nextPosition, nextField);
+
+        } else if (this.isFieldSuspect(nextField)) {
+
+            result = this.moveToSuspect(player, nextPosition, nextField);
+        } else {
+            result = new GameError(ErrorType.INVALID_MOVE, player.currentField + ' -> ' + nextField + ', ' + player.position.asString + ' -> ' + nextPosition.toString);
+        }
+
+        return result;
+    }
 
     suggest(suggestant: Player, suggestedSuspect: Suspect, suggestedWeapon: Weapon, suggestedRoom: Room) {
 
