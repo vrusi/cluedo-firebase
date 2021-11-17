@@ -1,0 +1,82 @@
+CLUEDO MOVEMENT
+
+P -> (C|N|E|S|W|^[1-9][0-9]*|T)
+
+P: player
+C: corridor
+N: north
+E: east
+S: south
+W: west
+^[1-9][0-9]*: room
+T: teleport
+
+================================================================================
+
+P -> C:
+	- if moving through the corridor: 
+		current == C && next == C && direction == any
+        forbidden: current != C 
+
+	- if leaving a room:
+		current == S && next == C && direction == N
+		current == W && next == C && direction == E
+		current == N && next == C && direction == S
+		current == E && next == C && direction == W
+
+——————————————————————————————————————————————————————————
+
+P -> (N|E|S|W):
+	- if entering a room:
+		current == C && next == N && direction == N
+		current == C && next == E && direction == E
+		current == C && next == S && direction == S
+		current == C && next == W && direction == W
+
+	- if leaving a room:
+		current == ^[1-9][0-9]* && next == (N|E|S|W) && direction == any
+
+    - moving through joining rooms: 
+        current == (N|E|S|W) && next == (N|E|S|W) && direction == current^(-1) && next
+——————————————————————————————————————————————————————————
+
+P -> ^[1-9][0-9]*:
+	- if walking inside a room:
+		current == ^[1-9][0-9]* && next == current && direction == any
+		
+	- if entering a room:
+		current == (N|E|S|W) && next == ^[1-9][0-9]* && direction == any
+
+	- if stepping away from a teleport:
+		current == T && next == ^[1-9][0-9]* && direction == any
+——————————————————————————————————————————————————————————
+
+P -> T:
+	- if stepping into a teleport:
+		current == ^[1-9][0-9]* && next == T && direction == any
+        - next == T will become the T of the new room
+
+——————————————————————————————————————————————————————————
+
+P1 -> P2:
+    - if stepping onto a field taken by another suspect:
+        P1 current == ^[1-9][0-9]* | P1 current == (N|E|S|W) && P1 next = P2 && direction == any &&
+            && P2 current == ^[1-9][0-9]* 
+
+——————————————————————————————————————————————————————————
+
+implicitly forbidden moves:
+
+	- walking into a wall:
+		any -> ^0
+		^[1-9][0-9]* -> C
+		C - > ^[1-9][0-9]*
+		(N|E|S|W) != direction
+		(N|E|S|W) != direction^(-1)
+		T -> 0
+		T -> C
+		C -> T
+	- walking into another player: 
+		any -> P outside of a room or in a doorway
+
+		
