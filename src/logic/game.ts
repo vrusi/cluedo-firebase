@@ -12,7 +12,7 @@ export enum Direction {
 }
 
 export enum Field {
-CORRIDOR = 'C',
+    CORRIDOR = 'C',
     DOOR_NORTH = 'N',
     DOOR_EAST = 'E',
     DOOR_SOUTH = 'S',
@@ -136,18 +136,18 @@ export class Board {
 
     print() {
         const header = ['+', ...Array(this.width).keys()];
-        const padding = (''+this.width).length + 1;
+        const padding = ('' + this.width).length + 1;
         let headerFormatted = ''
         header.forEach((item) => {
-            headerFormatted += (''+item).padStart(padding, ' ');
-        }); 
+            headerFormatted += ('' + item).padStart(padding, ' ');
+        });
         console.log(headerFormatted);
 
         this.fields.forEach((row, index) => {
-            let rowFormatted = (''+index).padStart(padding, ' ');
+            let rowFormatted = ('' + index).padStart(padding, ' ');
 
             row.forEach((col) => {
-                rowFormatted += (''+col).padStart(padding, ' ');
+                rowFormatted += ('' + col).padStart(padding, ' ');
             })
 
             console.log(rowFormatted);
@@ -250,13 +250,13 @@ export class Room {
 
         this.teleports = teleports ?? [];
     }
-    
+
     get hasNoWeapons() {
         return this.weapons.length === 0;
     }
 
     hasPosition(positionToFind: Position): boolean {
-        return !!this.positions.find( position => position.isEqual(positionToFind) );
+        return !!this.positions.find(position => position.isEqual(positionToFind));
     }
 }
 
@@ -511,10 +511,10 @@ export default class Game {
     moveToDoor(player: Player, nextPosition: Position, nextField: string, direction: Direction): Result<number> {
         if (this.isFieldCorridor(player.currentField)) {
             // entering a room
-            if (this.isSameDirection(nextField, direction)) {                
-                
+            if (this.isSameDirection(nextField, direction)) {
+
                 const result = this.addSuspectToRoomByPosition(nextPosition, player.character);
-                
+
                 if (Utils.isError(result)) {
                     return result;
                 } else {
@@ -605,11 +605,11 @@ export default class Game {
             return new GameError(ErrorType.INVALID_MOVE, player.currentField + ' -> ' + nextField + ' at ' + nextPosition.asString);
         }
     }
-    
+
     getPlayerByPosition(position: Position): Player | undefined {
         return this.players.find(player => player.position.isEqual(position));
     }
-    
+
     moveToSuspect(player: Player, nextPosition: Position, nextField: string): Result<number> {
         const suspectToBeSteppedOn = this.getPlayerByPosition(nextPosition) as Player;
         if (this.isFieldRoom(player.currentField) || this.isFieldDoor(player.currentField) && this.isFieldSuspect(nextField) && this.isFieldRoom(suspectToBeSteppedOn.currentField)) {

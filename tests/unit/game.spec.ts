@@ -542,7 +542,7 @@ describe('Game: movement', () => {
     game.move(Scarlet, Direction.SOUTH);
     const result = game.move(Scarlet, Direction.WEST);
     assert.isTrue(Utils.isSuccess(result));
-    assert.deepEqual(Scarlet.position, new Position( 21, 5))
+    assert.deepEqual(Scarlet.position, new Position(21, 5))
   });
 
   it('does not move the player into the room when standing from the wrong side', () => {
@@ -668,8 +668,8 @@ describe('Game: movement', () => {
     game.move(Mustard, Direction.SOUTH);
     game.move(Mustard, Direction.SOUTH);
 
-    assert.deepEqual(Scarlet.position, new Position( 20, 6));
-    assert.deepEqual(Mustard.position, new Position( 19, 6));
+    assert.deepEqual(Scarlet.position, new Position(20, 6));
+    assert.deepEqual(Mustard.position, new Position(19, 6));
 
     const room = game.rooms.find(room => room.id === '6');
     assert.isTrue(room?.suspects.includes(Scarlet.character));
@@ -695,7 +695,7 @@ describe('Game: movement', () => {
 
     const result = game.move(White, Direction.SOUTH);
     assert.isTrue(Utils.isSuccess(result));
-    assert.deepEqual(White.position, new Position( 8, 9));
+    assert.deepEqual(White.position, new Position(8, 9));
     assert.strictEqual(game.board.fields[8][9], Field.SUSPECT);
     assert.strictEqual(game.board.fields[7][9], Field.DOOR_NORTH);
 
@@ -703,12 +703,8 @@ describe('Game: movement', () => {
     assert.isFalse(room?.suspects.includes(White.character));
   });
 
-  /*
-
-
   it('moves the player through the passage', () => {
     assert.fail();
 
   })
-  */
 })
