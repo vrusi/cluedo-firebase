@@ -585,7 +585,7 @@ export default class Game {
         const currentRoom = player.currentRoom;
         if (!currentRoom) { return new GameError(ErrorType.ROOM_NOT_FOUND, player.currentRoom === null ? 'player.currentRoom = null' : 'player.currentRoom = ' + player.currentRoom); }
 
-        const teleport = (currentRoom.teleports as Teleport[]).find(teleport => teleport.sourcePosition === player.position);
+        const teleport = (currentRoom.teleports as Teleport[]).find(teleport => teleport.sourcePosition.isEqual(player.position));
         if (!teleport) { return new GameError(ErrorType.TELEPORT_NOT_FOUND, 'no teleport in player location: curren field ' + player.currentField + ' at ' + player.position.asString); }
 
         const destionationRoom = teleport.destinationRoom;

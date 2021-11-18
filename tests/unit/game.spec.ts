@@ -703,8 +703,35 @@ describe('Game: movement', () => {
     assert.isFalse(room?.suspects.includes(White.character));
   });
 
-  it('moves the player through the passage', () => {
-    assert.fail();
+  it('moves the player through a secret passage', () => {
+    const Scarlet = game.players[0];
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.NORTH);
+    game.move(Scarlet, Direction.WEST);
+    game.move(Scarlet, Direction.SOUTH);
+    game.move(Scarlet, Direction.SOUTH);
+    game.move(Scarlet, Direction.SOUTH);
+    game.move(Scarlet, Direction.SOUTH);
+    game.move(Scarlet, Direction.SOUTH);
+    game.move(Scarlet, Direction.WEST);
+    game.move(Scarlet, Direction.SOUTH);
+    game.move(Scarlet, Direction.WEST);
+    game.move(Scarlet, Direction.WEST);
+    game.move(Scarlet, Direction.WEST);
+    game.move(Scarlet, Direction.WEST);
+    const result = game.move(Scarlet, Direction.WEST);
+    game.board.print();
 
-  })
+    if (Utils.isError(result)) {
+      console.log((result as GameError).fullMessage);
+    }
+    assert.isTrue(Utils.isSuccess(result));
+    assert.deepEqual(Scarlet.position, new Position(1, 23));
+    const room = game.rooms.find(room => room.id === '3') as Room;
+    assert.isTrue(!!room.suspects.find(suspect => suspect.name === Scarlet.character.name));
+  });
 })
