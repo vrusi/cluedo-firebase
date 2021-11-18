@@ -564,13 +564,13 @@ export default class Game {
             // walking inside a room
             if (player.currentField === nextField) {
                 this.takeStep(player, nextPosition, nextField);
-                return 1;
+                return 0;
             }
 
         } else if (this.isFieldDoor(player.currentField)) {
             // entering a room 
             this.takeStep(player, nextPosition, nextField);
-            return 1;
+            return 0;
 
         } else if (this.isFieldTeleport(player.currentField)) {
             // leaving a teleport

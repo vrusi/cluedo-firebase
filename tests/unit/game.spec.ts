@@ -734,4 +734,24 @@ describe('Game: movement', () => {
     const room = game.rooms.find(room => room.id === '3') as Room;
     assert.isTrue(!!room.suspects.find(suspect => suspect.name === Scarlet.character.name));
   });
+
+  it('counts steps taken', () => {
+    const Scarlet = game.players[0];
+    let counter = game.move(Scarlet, Direction.NORTH) as number;
+    counter += game.move(Scarlet, Direction.NORTH) as number;
+    counter += game.move(Scarlet, Direction.NORTH) as number;
+    counter += game.move(Scarlet, Direction.NORTH) as number;
+    counter +=  game.move(Scarlet, Direction.NORTH) as number;
+    counter += game.move(Scarlet, Direction.NORTH) as number;
+    assert.equal(counter, 6);
+
+    counter = 0;
+    counter += game.move(Scarlet, Direction.WEST) as number;
+    counter += game.move(Scarlet, Direction.SOUTH) as number;
+    counter += game.move(Scarlet, Direction.SOUTH) as number;
+    counter += game.move(Scarlet, Direction.SOUTH) as number;
+    counter += game.move(Scarlet, Direction.SOUTH) as number;
+    counter += game.move(Scarlet, Direction.SOUTH) as number;
+    assert.equal(counter, 2);
+  });
 })
