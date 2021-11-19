@@ -186,7 +186,7 @@ export class Suspect {
 }
 
 export class Player {
-    public character: Suspect;
+    public suspect: Suspect;
     public knownSuspects: Suspect[];
     public knownWeapons: Weapon[];
     public knownRooms: Room[];
@@ -200,25 +200,25 @@ export class Player {
     public currentField: string;
 
     constructor(
-        character: Suspect,
+        suspect: Suspect,
         knownSuspects: Suspect[],
         knownWeapons: Weapon[],
         knownRooms: Room[],
         position?: Position,
         cards?: (Suspect | Weapon | Room)[],
     ) {
-        this.character = character;
+        this.suspect = suspect;
         this.knownSuspects = knownSuspects;
         this.knownWeapons = knownWeapons;
         this.knownRooms = knownRooms;
-        this.position = position ?? this.character.startingPosition;
+        this.position = position ?? this.suspect.startingPosition;
         this.notepad = new Map;
         this.cards = cards ?? [];
         this.currentField = 'C';
     }
 
     get currentRoom(): Room | null {
-        return this.knownRooms.find(room => room.suspects.includes(this.character)) ?? null;
+        return this.knownRooms.find(room => room.suspects.includes(this.suspect)) ?? null;
     }
 }
 
@@ -495,7 +495,7 @@ export default class Game {
         } else if (this.isFieldDoor(player.currentField)) {
             // leaving a room
             if (this.isOppositeDirection(player.currentField, direction)) {
-                const result = this.removeSuspectFromRoomByPosition(player.position, player.character);
+                const result = this.removeSuspectFromRoomByPosition(player.position, player.suspect);
                 if (Utils.isError(result)) {
                     return result;
                 } else {
@@ -513,7 +513,7 @@ export default class Game {
             // entering a room
             if (this.isSameDirection(nextField, direction)) {
 
-                const result = this.addSuspectToRoomByPosition(nextPosition, player.character);
+                const result = this.addSuspectToRoomByPosition(nextPosition, player.suspect);
 
                 if (Utils.isError(result)) {
                     return result;
@@ -540,12 +540,12 @@ export default class Game {
                     return new GameError(ErrorType.ROOM_NOT_FOUND, player.position.asString);
                 }
 
-                let result = this.removeSuspectFromRoomByPosition(player.position, player.character);
+                let result = this.removeSuspectFromRoomByPosition(player.position, player.suspect);
                 if (Utils.isError(result)) {
                     return result;
                 }
 
-                result = this.addSuspectToRoomByPosition(nextPosition, player.character);
+                result = this.addSuspectToRoomByPosition(nextPosition, player.suspect);
                 if (Utils.isError(result)) {
                     return result;
 
@@ -591,8 +591,8 @@ export default class Game {
         const destionationRoom = teleport.destinationRoom;
         if (!destionationRoom) { return new GameError(ErrorType.ROOM_NOT_FOUND, 'teleport from ' + teleport.sourcePosition.asString + ' ' + teleport.sourceRoom.name + 'has no destination room'); }
 
-        currentRoom.suspects = (currentRoom.suspects as Suspect[]).filter(suspect => suspect.name !== player.character.name);
-        destionationRoom.suspects.push(player.character);
+        currentRoom.suspects = (currentRoom.suspects as Suspect[]).filter(suspect => suspect.name !== player.suspect.name);
+        destionationRoom.suspects.push(player.suspect);
         player.position = teleport.destinationPosition;
         return 0;
     }
@@ -651,11 +651,19 @@ export default class Game {
         return result;
     }
 
+    isPlayerInRoom(player: Player, room: Room): boolean {
+        return this.rooms.find(room => room.suspects.includes(player.suspect)) != undefined;
+    }
+
+    isSuspectInRoom(suspect: Suspect, room: Room): boolean {
+
+    }
+
     suggest(suggestant: Player, suggestedSuspect: Suspect, suggestedWeapon: Weapon, suggestedRoom: Room) {
 
         // select the first player in order
         // TODO: make sure it's the first player to the WEST
-        const suggestantIndex = this.players.map(player => player.character === suggestant.character).indexOf(true);
+        const suggestantIndex = this.players.map(player => player.suspect === suggestant.suspect).indexOf(true);
         const playerToAnswer = this.players[(suggestantIndex + 1) % this.players.length];
 
         this.answer(playerToAnswer, suggestedSuspect, suggestedWeapon, suggestedRoom);
